@@ -31,7 +31,7 @@ variable "model_name" {
 variable "model_version" {
   description = "OpenAI model version string"
   type        = string
-  default     = "2026-01-01"
+  default     = "2026-03-03"
 }
 
 variable "model_capacity" {

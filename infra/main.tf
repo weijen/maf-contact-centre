@@ -123,6 +123,10 @@ resource "azurerm_ai_foundry_project" "main" {
   location           = azurerm_ai_foundry.hub.location
   ai_services_hub_id = azurerm_ai_foundry.hub.id
 
+  identity {
+    type = "SystemAssigned"
+  }
+
   tags = {
     environment = var.environment
   }

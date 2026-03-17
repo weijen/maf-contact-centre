@@ -5,5 +5,5 @@ location            = "swedencentral"
 resource_group_name = "rg-maf-contact-centre"
 environment         = "dev"
 model_name          = "gpt-5.3-chat"
-model_version       = "2026-01-01"
+model_version       = "2026-03-03"
 model_capacity      = 30
