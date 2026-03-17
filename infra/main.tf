@@ -122,6 +122,7 @@ resource "azurerm_ai_foundry_project" "main" {
   name               = "maf-contact-centre"
   location           = azurerm_ai_foundry.hub.location
   ai_services_hub_id = azurerm_ai_foundry.hub.id
+  friendly_name      = "MAF Contact Centre"
 
   identity {
     type = "SystemAssigned"
