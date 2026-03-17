@@ -1,6 +1,6 @@
 # Copy this file to terraform.tfvars and adjust values as needed.
 
-subscription_id     = "aed60926-8bee-4a41-8892-55b523eb705f"
+subscription_id     = "<your-azure-subscription-id>"
 location            = "swedencentral"
 resource_group_name = "rg-maf-contact-centre"
 environment         = "dev"

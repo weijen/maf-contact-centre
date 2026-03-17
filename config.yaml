@@ -1,0 +1,130 @@
+# Application metadata
+app:
+  name: "MSFT Agent Framework Contact Centre"
+  description: "Multi-agent assistant with intelligent handoffs"
+  version: "0.0.1"
+
+
+# Server Configuration
+server:
+  host: "0.0.0.0"
+  port: 8000
+  log_level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+
+# Agent Definitions
+# -----------------
+# Each agent is an AI persona with specific instructions and tools.
+# Agents handle different domains and can transfer conversations to each other.
+#
+# Required fields:
+#   name: Unique identifier (lowercase, underscores only)
+#   description: Used in handoff function descriptions - helps AI decide when to transfer
+#   instructions: System prompt defining agent behavior
+#
+# Optional fields:
+#   voice: TTS voice (overrides voice.default)
+#   plugins: List of plugin names from plugins section
+#   mcp: List of MCP server names from mcp_servers section
+agents:
+   - name: "receptionist"
+     description: "A friendly receptionist who greets callers and routes them to the appropriate department"
+     instructions: |
+       You are a friendly receptionist for Acme Corporation.
+
+       Your responsibilities:
+       - Greet callers warmly
+       - Understand their needs
+       - Route them to the appropriate specialist
+       - You can help with delivery slots and order information using the orders MCP server
+       - When a customer wishes to book a slot, call the bookDeliverySlot with the slot ID.
+
+       Available departments:
+       - Billing: For payment, invoices, account balance questions
+       - Support: For technical issues and troubleshooting
+
+       Be concise, professional, and helpful.
+       Only speak in english.
+     plugins:
+       - "receptionist_plugin"
+
+   - name: "billing"
+     description: "A billing specialist who handles payment and account questions"
+     voice: "en-GB-SoniaNeural"
+     instructions: |
+       You are a billing specialist for Acme Corporation.
+
+       Your responsibilities:
+       - Answer billing and payment questions
+       - Look up account information
+       - Process payment arrangements
+
+       Always verify account details before providing sensitive information.
+       Only speak in english.
+     plugins:
+       - "billing_plugin"
+
+   - name: "support"
+     description: "A technical support specialist who helps with product issues"
+     voice: "en-GB-AlfieNeural"
+     instructions: |
+       You are a technical support specialist for Acme Corporation.
+
+       Your responsibilities:
+       - Troubleshoot technical issues
+       - Provide step-by-step guidance
+       - Escalate complex issues when needed
+
+       Be patient and thorough in your explanations.
+       Only speak in english.
+     plugins:
+       - "support_plugin"
+
+# Handoff Definitions
+# -------------------
+# Defines which agents can transfer to which other agents.
+# The description helps the AI decide when to trigger a transfer.
+#
+# The system automatically injects transfer_to_X functions into each agent.
+# For example, the handoff below creates a transfer_to_billing() function
+# that the receptionist can call.
+handoffs:
+   - from: "receptionist"
+     to: "billing"
+     description: "Transfer to billing for payment and account questions"
+
+   - from: "receptionist"
+     to: "support"
+     description: "Transfer to support for technical issues"
+
+   - from: "billing"
+     to: "receptionist"
+     description: "Transfer to receptionist for general questions"
+
+   - from: "billing"
+     to: "support"
+     description: "Transfer to support for technical issues"
+
+   - from: "support"
+     to: "receptionist"
+     description: "Transfer to receptionist for general questions"
+
+   - from: "support"
+     to: "billing"
+     description: "Transfer to billing for payment questions"
+
+# Orchestration Settings
+orchestration:
+  # Silent handoffs: When true, agents transfer without saying "please hold" or similar.
+  # The customer just hears the new agent's voice continuing the conversation.
+  silent_handoffs: true
+
+# Observability Configuration
+# ----------------------------
+# Configures OpenTelemetry tracing with Azure Monitor.
+# Set connection_string to enable (use ${APPLICATIONINSIGHTS_CONNECTION_STRING}).
+# No-op when connection_string is empty.
+observability:
+  connection_string: "${APPLICATIONINSIGHTS_CONNECTION_STRING}"
+  service_name: "ai-contact-centre"
+  enable_content_recording: true
+  trace_websocket_frames: false

@@ -34,13 +34,13 @@ az provider register --namespace 'Microsoft.MachineLearningServices'
 ### 1. Authenticate
 
 ```bash
-az login --tenant 16b3c013-d300-468d-ac64-7eda0820b6d3
+az login --tenant <your-azure-tenant-id>
 ```
 
 ### 2. Set the subscription
 
 ```bash
-export ARM_SUBSCRIPTION_ID="aed60926-8bee-4a41-8892-55b523eb705f"
+export ARM_SUBSCRIPTION_ID="<your-azure-subscription-id>"
 ```
 
 ### 3. Configure variables (optional)
