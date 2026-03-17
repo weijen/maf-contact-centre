@@ -1,0 +1,8 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+# Variable files (may contain secrets)
+*.tfvars
+!terraform.tfvars.example

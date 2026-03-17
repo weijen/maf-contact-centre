@@ -11,3 +11,8 @@ wheels/
 
 # Pytest
 .pytest_cache/
+
+# Terraform
+*.tfstate
+*.tfstate.backup
+*.tfplan
