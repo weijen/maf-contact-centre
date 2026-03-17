@@ -8,6 +8,7 @@
 
 - We use **uv** to manage packages and virtual environments.
 - Use `uv add` to add dependencies and `uv run` to execute scripts.
+- Always run Python from the `.venv` virtual environment.
 
 ## Development Practices
 
