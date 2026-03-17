@@ -151,3 +151,31 @@ resource "azurerm_cognitive_deployment" "gpt" {
     capacity = var.model_capacity
   }
 }
+
+# ---------------------------------------------------------------------------
+# RBAC — grant the deploying user access to AI Foundry portal resources
+# ---------------------------------------------------------------------------
+
+resource "azurerm_role_assignment" "user_ai_developer" {
+  scope                = azurerm_resource_group.main.id
+  role_definition_name = "Azure AI Developer"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
+
+resource "azurerm_role_assignment" "user_cognitive_openai_user" {
+  scope                = azurerm_ai_services.main.id
+  role_definition_name = "Cognitive Services OpenAI User"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
+
+resource "azurerm_role_assignment" "user_storage_blob_contributor" {
+  scope                = azurerm_storage_account.hub.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
+
+resource "azurerm_role_assignment" "user_keyvault_reader" {
+  scope                = azurerm_key_vault.hub.id
+  role_definition_name = "Key Vault Reader"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
