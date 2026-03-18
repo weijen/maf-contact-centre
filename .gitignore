@@ -9,10 +9,26 @@ wheels/
 # Virtual environments
 .venv
 
+# Local environment overrides
+.env
+.env.*
+!.env.example
+
+# Local secrets and certificates
+*.key
+*.pem
+*.p12
+*.pfx
+
 # Pytest
 .pytest_cache/
 
 # Terraform
+.terraform/
 *.tfstate
 *.tfstate.backup
+*.tfstate.*
 *.tfplan
+*.tfvars
+*.tfvars.json
+!.terraform.tfvars.example

@@ -4,7 +4,13 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "agent-framework==1.0.0b260212",
+    "azure-ai-projects==2.0.0b4",
+    "azure-identity>=1.26.0b2",
+    "python-dotenv>=1.2.2",
+    "pyyaml>=6.0.3",
+]
 
 [dependency-groups]
 dev = [

@@ -18,7 +18,7 @@ resource "azurerm_resource_group" "main" {
 }
 
 # ---------------------------------------------------------------------------
-# Storage Account (required by AI Foundry Hub)
+# Storage Account
 # ---------------------------------------------------------------------------
 
 resource "azurerm_storage_account" "hub" {
@@ -34,7 +34,7 @@ resource "azurerm_storage_account" "hub" {
 }
 
 # ---------------------------------------------------------------------------
-# Key Vault (required by AI Foundry Hub)
+# Key Vault
 # ---------------------------------------------------------------------------
 
 resource "azurerm_key_vault" "hub" {
@@ -79,53 +79,60 @@ resource "azurerm_application_insights" "main" {
 }
 
 # ---------------------------------------------------------------------------
-# AI Services (provides the cognitive endpoint for model deployments)
+# AI Foundry Resource (CognitiveServices account with project management)
 # ---------------------------------------------------------------------------
 
-resource "azurerm_ai_services" "main" {
-  name                = "ais-maf-cc"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  sku_name            = "S0"
+resource "azapi_resource" "ai_foundry" {
+  type                      = "Microsoft.CognitiveServices/accounts@2025-06-01"
+  name                      = "ais-maf-cc"
+  parent_id                 = azurerm_resource_group.main.id
+  location                  = var.location
+  schema_validation_enabled = false
 
-  tags = {
-    environment = var.environment
-  }
-}
-
-# ---------------------------------------------------------------------------
-# AI Foundry Hub
-# ---------------------------------------------------------------------------
-
-resource "azurerm_ai_foundry" "hub" {
-  name                    = "hub-maf-cc"
-  location                = azurerm_ai_services.main.location
-  resource_group_name     = azurerm_resource_group.main.name
-  storage_account_id      = azurerm_storage_account.hub.id
-  key_vault_id            = azurerm_key_vault.hub.id
-  application_insights_id = azurerm_application_insights.main.id
-
-  identity {
-    type = "SystemAssigned"
+  body = {
+    kind = "AIServices"
+    sku = {
+      name = "S0"
+    }
+    identity = {
+      type = "SystemAssigned"
+    }
+    properties = {
+      disableLocalAuth       = false
+      allowProjectManagement = true
+      customSubDomainName    = "ais-maf-cc"
+    }
   }
 
   tags = {
     environment = var.environment
   }
+
+  response_export_values = ["properties.endpoint"]
 }
 
 # ---------------------------------------------------------------------------
 # AI Foundry Project
 # ---------------------------------------------------------------------------
 
-resource "azurerm_ai_foundry_project" "main" {
-  name               = "maf-contact-centre"
-  location           = azurerm_ai_foundry.hub.location
-  ai_services_hub_id = azurerm_ai_foundry.hub.id
-  friendly_name      = "MAF Contact Centre"
+resource "azapi_resource" "ai_foundry_project" {
+  type                      = "Microsoft.CognitiveServices/accounts/projects@2025-06-01"
+  name                      = "maf-contact-centre"
+  parent_id                 = azapi_resource.ai_foundry.id
+  location                  = var.location
+  schema_validation_enabled = false
 
-  identity {
-    type = "SystemAssigned"
+  body = {
+    sku = {
+      name = "S0"
+    }
+    identity = {
+      type = "SystemAssigned"
+    }
+    properties = {
+      displayName = "MAF Contact Centre"
+      description = "MAF Contact Centre AI project"
+    }
   }
 
   tags = {
@@ -137,20 +144,26 @@ resource "azurerm_ai_foundry_project" "main" {
 # GPT Model Deployment
 # ---------------------------------------------------------------------------
 
-resource "azurerm_cognitive_deployment" "gpt" {
-  name                 = "gpt-53-chat"
-  cognitive_account_id = azurerm_ai_services.main.id
+resource "azapi_resource" "gpt_deployment" {
+  type      = "Microsoft.CognitiveServices/accounts/deployments@2025-06-01"
+  name      = "gpt-53-chat"
+  parent_id = azapi_resource.ai_foundry.id
 
-  model {
-    format  = "OpenAI"
-    name    = var.model_name
-    version = var.model_version
+  body = {
+    sku = {
+      name     = "GlobalStandard"
+      capacity = var.model_capacity
+    }
+    properties = {
+      model = {
+        format  = "OpenAI"
+        name    = var.model_name
+        version = var.model_version
+      }
+    }
   }
 
-  sku {
-    name     = "GlobalStandard"
-    capacity = var.model_capacity
-  }
+  depends_on = [azapi_resource.ai_foundry]
 }
 
 # ---------------------------------------------------------------------------
@@ -164,7 +177,7 @@ resource "azurerm_role_assignment" "user_ai_developer" {
 }
 
 resource "azurerm_role_assignment" "user_cognitive_openai_user" {
-  scope                = azurerm_ai_services.main.id
+  scope                = azapi_resource.ai_foundry.id
   role_definition_name = "Cognitive Services OpenAI User"
   principal_id         = data.azurerm_client_config.current.object_id
 }

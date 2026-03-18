@@ -3,19 +3,19 @@ output "resource_group_name" {
   value       = azurerm_resource_group.main.name
 }
 
-output "ai_hub_name" {
-  description = "Name of the AI Foundry Hub"
-  value       = azurerm_ai_foundry.hub.name
+output "ai_foundry_name" {
+  description = "Name of the AI Foundry resource"
+  value       = azapi_resource.ai_foundry.name
 }
 
 output "ai_project_name" {
   description = "Name of the AI Foundry Project"
-  value       = azurerm_ai_foundry_project.main.name
+  value       = azapi_resource.ai_foundry_project.name
 }
 
 output "ai_services_endpoint" {
   description = "Endpoint of the AI Services account"
-  value       = azurerm_ai_services.main.endpoint
+  value       = azapi_resource.ai_foundry.output.properties.endpoint
 }
 
 output "application_insights_connection_string" {

@@ -1,0 +1,44 @@
+[
+  {
+    "id": "faq-greeting-001",
+    "customer_message": "Hello",
+    "expected_agent": "receptionist",
+    "expected_behavior": "Greets the customer and offers help without a handoff."
+  },
+  {
+    "id": "faq-hours-002",
+    "customer_message": "What are your office hours?",
+    "expected_agent": "receptionist",
+    "expected_behavior": "Answers the office hours question directly."
+  },
+  {
+    "id": "order-delivery-slot-003",
+    "customer_message": "Can I book a delivery slot for Friday morning?",
+    "expected_agent": "receptionist",
+    "expected_behavior": "Handles the delivery-slot request without involving a specialist."
+  },
+  {
+    "id": "billing-balance-004",
+    "customer_message": "What is my account balance?",
+    "expected_agent": "billing",
+    "expected_behavior": "Routes to billing and asks for account verification before sharing sensitive details."
+  },
+  {
+    "id": "billing-payment-status-005",
+    "customer_message": "Has my latest payment gone through?",
+    "expected_agent": "billing",
+    "expected_behavior": "Routes to billing and requests verification before confirming payment status."
+  },
+  {
+    "id": "support-password-reset-006",
+    "customer_message": "I forgot my password and cannot sign in.",
+    "expected_agent": "support",
+    "expected_behavior": "Routes to support and provides password reset guidance."
+  },
+  {
+    "id": "support-ticket-007",
+    "customer_message": "The app crashes every time I open billing and I need a ticket.",
+    "expected_agent": "support",
+    "expected_behavior": "Routes to support, acknowledges troubleshooting, and offers ticket creation."
+  }
+]
