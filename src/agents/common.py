@@ -112,7 +112,7 @@ def load_azure_ai_model_config(env_path: Path = DEFAULT_ENV_PATH) -> AzureAIMode
 
 def build_chat_client(
     *,
-    credential: AsyncTokenCredential | None,
+    credential: AsyncTokenCredential | None = None,
     env_path: Path = DEFAULT_ENV_PATH,
 ) -> OpenAIResponsesClient:
     model_config = load_azure_ai_model_config(env_path=env_path)
