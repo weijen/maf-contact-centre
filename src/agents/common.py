@@ -13,12 +13,8 @@ from azure.ai.projects.aio import AIProjectClient
 from azure.core.credentials_async import AsyncTokenCredential
 from azure.identity.aio import DefaultAzureCredential
 from dotenv import dotenv_values
-import yaml
 
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_CONFIG_PATH = PROJECT_ROOT / "config.yaml"
-DEFAULT_ENV_PATH = PROJECT_ROOT / ".env"
+from src.core.config import DEFAULT_CONFIG_PATH, DEFAULT_ENV_PATH, load_yaml
 
 
 @dataclass(frozen=True)
@@ -71,7 +67,7 @@ class ManagedFoundryResponsesClient(OpenAIResponsesClient):
 
 
 def load_agent_definition(agent_name: str, config_path: Path = DEFAULT_CONFIG_PATH) -> AgentDefinition:
-    config = _load_yaml(config_path)
+    config = load_yaml(config_path)
     agents = config.get("agents", [])
 
     for agent in agents:
@@ -153,16 +149,6 @@ def create_agent(
         description=definition.description,
         instructions=definition.instructions.rstrip("\n"),
     )
-
-
-def _load_yaml(config_path: Path) -> dict[str, Any]:
-    with config_path.open("r", encoding="utf-8") as file_handle:
-        loaded = yaml.safe_load(file_handle)
-
-    if not isinstance(loaded, dict):
-        raise ValueError(f"Expected {config_path} to contain a mapping at the top level.")
-
-    return loaded
 
 
 def _load_azure_ai_env_config(env_path: Path) -> dict[str, str]:
