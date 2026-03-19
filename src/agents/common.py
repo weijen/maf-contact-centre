@@ -22,6 +22,7 @@ class AgentDefinition:
     name: str
     description: str
     instructions: str
+    plugins: list[str]
 
 
 @dataclass(frozen=True)
@@ -82,6 +83,7 @@ def load_agent_definition(agent_name: str, config_path: Path = DEFAULT_CONFIG_PA
             name=agent["name"],
             description=agent["description"],
             instructions=instructions,
+            plugins=agent.get("plugins", []),
         )
 
     raise ValueError(f"Could not find an agent definition for {agent_name} in {config_path}.")
@@ -137,17 +139,21 @@ def create_agent(
     credential: AsyncTokenCredential | None = None,
     client: ManagedFoundryResponsesClient | OpenAIResponsesClient | None = None,
 ) -> Agent:
+    from src.tools import load_plugins
+
     definition = load_agent_definition(agent_name, config_path)
     resolved_client = client or build_chat_client(
         credential=credential,
         env_path=env_path,
     )
+    tools = load_plugins(definition.plugins) if definition.plugins else None
 
     return Agent(
         client=resolved_client,
         name=definition.name,
         description=definition.description,
         instructions=definition.instructions.rstrip("\n"),
+        tools=tools,
     )
 
 

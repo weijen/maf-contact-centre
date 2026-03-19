@@ -45,7 +45,7 @@ agents:
        Be concise, professional, and helpful.
        Only speak in english.
      plugins:
-       - "receptionist_plugin"
+       - "receptionist_tools"
 
    - name: "billing"
      description: "A billing specialist who handles payment and account questions"
@@ -61,7 +61,7 @@ agents:
        Always verify account details before providing sensitive information.
        Only speak in english.
      plugins:
-       - "billing_plugin"
+       - "billing_tools"
 
    - name: "support"
      description: "A technical support specialist who helps with product issues"
@@ -77,7 +77,7 @@ agents:
        Be patient and thorough in your explanations.
        Only speak in english.
      plugins:
-       - "support_plugin"
+       - "support_tools"
 
 # Handoff Definitions
 # -------------------
