@@ -7,7 +7,8 @@ from agent_framework import Agent, Workflow
 from agent_framework.openai import OpenAIResponsesClient
 from agent_framework.orchestrations import HandoffBuilder
 
-from src.agents.common import DEFAULT_CONFIG_PATH, create_agent, load_yaml
+from src.agents.common import create_agent
+from src.core.config import DEFAULT_CONFIG_PATH, load_yaml
 
 
 @dataclass(frozen=True)

@@ -6,8 +6,9 @@ from agent_framework import Agent
 from agent_framework.openai import OpenAIResponsesClient
 from azure.core.credentials_async import AsyncTokenCredential
 
-from src.agents.common import AgentDefinition, AzureAIModelConfig, DEFAULT_CONFIG_PATH, DEFAULT_ENV_PATH
-from src.agents.common import ManagedFoundryResponsesClient, create_agent, load_agent_definition
+from src.agents.common import AgentDefinition, AzureAIModelConfig, ManagedFoundryResponsesClient
+from src.agents.common import create_agent, load_agent_definition
+from src.core.config import DEFAULT_CONFIG_PATH, DEFAULT_ENV_PATH
 from src.agents.common import load_azure_ai_model_config as load_shared_azure_ai_model_config
 
 
