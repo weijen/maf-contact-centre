@@ -1,12 +1,33 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 
 from agent_framework import Agent, Workflow
 from agent_framework.openai import OpenAIResponsesClient
 from agent_framework.orchestrations import HandoffBuilder
 
-from src.agents.common import DEFAULT_CONFIG_PATH, HandoffRule, create_agent, load_handoff_policy
+from src.agents.common import DEFAULT_CONFIG_PATH, create_agent, load_yaml
+
+
+@dataclass(frozen=True)
+class HandoffRule:
+    from_agent: str
+    to_agent: str
+    description: str
+
+
+def load_handoff_policy(config_path: Path = DEFAULT_CONFIG_PATH) -> list[HandoffRule]:
+    config = load_yaml(config_path)
+    handoffs = config.get("handoffs", [])
+    return [
+        HandoffRule(
+            from_agent=h["from"],
+            to_agent=h["to"],
+            description=h["description"],
+        )
+        for h in handoffs
+    ]
 
 
 def build_handoff_workflow(

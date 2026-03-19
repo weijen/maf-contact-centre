@@ -29,13 +29,6 @@ class AgentDefinition:
 
 
 @dataclass(frozen=True)
-class HandoffRule:
-    from_agent: str
-    to_agent: str
-    description: str
-
-
-@dataclass(frozen=True)
 class AzureAIModelConfig:
     project_endpoint: str
     model_deployment_name: str
@@ -78,7 +71,7 @@ class ManagedFoundryResponsesClient(OpenAIResponsesClient):
 
 
 def load_agent_definition(agent_name: str, config_path: Path = DEFAULT_CONFIG_PATH) -> AgentDefinition:
-    config = _load_yaml(config_path)
+    config = load_yaml(config_path)
     agents = config.get("agents", [])
 
     for agent in agents:
@@ -98,17 +91,14 @@ def load_agent_definition(agent_name: str, config_path: Path = DEFAULT_CONFIG_PA
     raise ValueError(f"Could not find an agent definition for {agent_name} in {config_path}.")
 
 
-def load_handoff_policy(config_path: Path = DEFAULT_CONFIG_PATH) -> list[HandoffRule]:
-    config = _load_yaml(config_path)
-    handoffs = config.get("handoffs", [])
-    return [
-        HandoffRule(
-            from_agent=h["from"],
-            to_agent=h["to"],
-            description=h["description"],
-        )
-        for h in handoffs
-    ]
+def load_yaml(config_path: Path) -> dict[str, Any]:
+    with config_path.open("r", encoding="utf-8") as file_handle:
+        loaded = yaml.safe_load(file_handle)
+
+    if not isinstance(loaded, dict):
+        raise ValueError(f"Expected {config_path} to contain a mapping at the top level.")
+
+    return loaded
 
 
 def load_azure_ai_model_config(env_path: Path = DEFAULT_ENV_PATH) -> AzureAIModelConfig:
@@ -173,16 +163,6 @@ def create_agent(
         description=definition.description,
         instructions=definition.instructions.rstrip("\n"),
     )
-
-
-def _load_yaml(config_path: Path) -> dict[str, Any]:
-    with config_path.open("r", encoding="utf-8") as file_handle:
-        loaded = yaml.safe_load(file_handle)
-
-    if not isinstance(loaded, dict):
-        raise ValueError(f"Expected {config_path} to contain a mapping at the top level.")
-
-    return loaded
 
 
 def _load_azure_ai_env_config(env_path: Path) -> dict[str, str]:

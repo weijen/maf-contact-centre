@@ -2,8 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.agents.common import HandoffRule, load_handoff_policy
-from src.workflows.handoff_workflow import build_handoff_workflow
+from src.workflows.handoff_workflow import HandoffRule, build_handoff_workflow, load_handoff_policy
 
 
 def test_load_handoff_policy_reads_all_rules(tmp_path):
