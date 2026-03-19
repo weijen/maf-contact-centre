@@ -1334,6 +1334,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "agent-framework" },
+    { name = "agent-framework-orchestrations" },
     { name = "azure-ai-projects" },
     { name = "azure-identity" },
     { name = "python-dotenv" },
@@ -1348,6 +1349,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "agent-framework", specifier = "==1.0.0b260212" },
+    { name = "agent-framework-orchestrations", specifier = ">=1.0.0b260212" },
     { name = "azure-ai-projects", specifier = "==2.0.0b4" },
     { name = "azure-identity", specifier = ">=1.26.0b2" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
