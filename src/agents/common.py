@@ -29,6 +29,13 @@ class AgentDefinition:
 
 
 @dataclass(frozen=True)
+class HandoffRule:
+    from_agent: str
+    to_agent: str
+    description: str
+
+
+@dataclass(frozen=True)
 class AzureAIModelConfig:
     project_endpoint: str
     model_deployment_name: str
@@ -89,6 +96,19 @@ def load_agent_definition(agent_name: str, config_path: Path = DEFAULT_CONFIG_PA
         )
 
     raise ValueError(f"Could not find an agent definition for {agent_name} in {config_path}.")
+
+
+def load_handoff_policy(config_path: Path = DEFAULT_CONFIG_PATH) -> list[HandoffRule]:
+    config = _load_yaml(config_path)
+    handoffs = config.get("handoffs", [])
+    return [
+        HandoffRule(
+            from_agent=h["from"],
+            to_agent=h["to"],
+            description=h["description"],
+        )
+        for h in handoffs
+    ]
 
 
 def load_azure_ai_model_config(env_path: Path = DEFAULT_ENV_PATH) -> AzureAIModelConfig:

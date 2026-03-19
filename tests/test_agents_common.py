@@ -226,3 +226,24 @@ async def test_managed_foundry_responses_client_closes_owned_resources() -> None
     async_openai_client.close.assert_awaited_once()
     project_client.close.assert_awaited_once()
     credential.close.assert_awaited_once()
+
+
+@pytest.mark.anyio
+async def test_managed_foundry_responses_client_does_not_close_external_credential() -> None:
+    async_openai_client = AsyncMock()
+    project_client = AsyncMock()
+    credential = AsyncMock()
+    client = ManagedFoundryResponsesClient(
+        project_client=project_client,
+        credential=credential,
+        owns_credential=False,
+        model_id="gpt-4.1",
+        async_client=async_openai_client,
+    )
+
+    async with client:
+        pass
+
+    async_openai_client.close.assert_awaited_once()
+    project_client.close.assert_awaited_once()
+    credential.close.assert_not_awaited()
