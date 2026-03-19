@@ -19,7 +19,15 @@ from typing import Any
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from azure.ai.evaluation import (
+from dotenv import load_dotenv
+
+load_dotenv(PROJECT_ROOT / ".env")
+
+from src.core.telemetry import setup_telemetry  # noqa: E402
+
+setup_telemetry()
+
+from azure.ai.evaluation import (  # noqa: E402
     CoherenceEvaluator,
     RelevanceEvaluator,
     ToolCallAccuracyEvaluator,

@@ -142,6 +142,33 @@ resource "azapi_resource" "ai_foundry_project" {
 }
 
 # ---------------------------------------------------------------------------
+# App Insights Connection (enables Tracing in AI Foundry portal)
+# ---------------------------------------------------------------------------
+
+resource "azapi_resource" "appinsights_connection" {
+  type                      = "Microsoft.CognitiveServices/accounts/connections@2025-06-01"
+  name                      = "appi-maf-cc"
+  parent_id                 = azapi_resource.ai_foundry.id
+  schema_validation_enabled = false
+
+  body = {
+    properties = {
+      authType = "ApiKey"
+      category = "AppInsights"
+      credentials = {
+        key = azurerm_application_insights.main.instrumentation_key
+      }
+      metadata = {
+        ResourceId = azurerm_application_insights.main.id
+      }
+      target = azurerm_application_insights.main.id
+    }
+  }
+
+  depends_on = [azapi_resource.ai_foundry_project]
+}
+
+# ---------------------------------------------------------------------------
 # GPT Model Deployment
 # ---------------------------------------------------------------------------
 

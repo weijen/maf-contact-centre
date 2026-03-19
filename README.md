@@ -1,81 +1,97 @@
 # Customer Service Multi-Agent Prototype
 
-## Goal
+A multi-agent contact centre built with the [Microsoft Agent Framework](https://github.com/microsoft/agent-framework) featuring intelligent handoffs, automated evaluation, and OpenTelemetry tracing.
 
-Build a Microsoft Agent Framework contact centre prototype with three agents:
+## Agents
 
-- receptionist
-- billing
-- support
+All conversations start with the **receptionist**, which triages and hands off as needed:
 
-All conversations start with the receptionist. The receptionist prompt is defined in `config.yaml`, and the model connection is loaded from `.env`.
+| Agent | Role |
+|---|---|
+| **Receptionist** | Greeting, office hours, triage; routes to billing or support |
+| **Billing** | Account balance, payment status, invoices, payment arrangements |
+| **Support** | Password reset, technical troubleshooting, escalation |
 
-## Current status
+Handoffs are bidirectional between all three agents (configured in `config.yaml`).
 
-- `receptionist` is implemented as an `agent_framework.Agent`
-- the receptionist system prompt is loaded from `config.yaml`
-- the Azure AI Foundry project endpoint and model deployment name are loaded from `.env`
-- `billing`, `support`, and handoff workflow files are still scaffolded
+## Project structure
 
-## User flow
-
-All users start with receptionist.
-
-Receptionist either:
-
-- answers simple general questions
-- hands off to billing
-- hands off to support
-
-## V1 scope
-
-- billing: account balance, payment status
-- support: password reset, create support ticket
-- receptionist: greeting, office hours, triage
-
-## Out of scope
-
-- real authentication
-- real database
-- real payment processing
-- production-grade UI
+```
+main.py                         # entry point — interactive conversation
+config.yaml                     # agent definitions, system prompts, handoff rules
+src/
+  agents/                       # agent factories (receptionist, billing, support)
+  core/                         # shared config loading, telemetry
+  workflows/                    # HandoffBuilder-based multi-agent workflow
+scripts/
+  run_manual_tests.py           # automated evaluation runner
+data/
+  manual_test_cases_v1.json     # 9 routing test cases
+infra/                          # Terraform (Azure AI Foundry, App Insights, etc.)
+tests/                          # pytest unit tests
+```
 
 ## Requirements
 
 - Python 3.13+
-- `uv`
+- [uv](https://docs.astral.sh/uv/)
 - Azure credentials available to `DefaultAzureCredential`
 
 ## Local setup
 
-1. Create or update `.env` from `.env.example`.
-2. Fill in the Azure AI Foundry connection values.
-3. Install dependencies with `uv sync`.
-4. Run the entry point with `uv run python main.py`.
+1. Copy `.env.example` to `.env` and fill in the Azure AI Foundry connection values.
+2. Install dependencies:
+   ```bash
+   uv sync
+   ```
+3. Run the entry point:
+   ```bash
+   uv run python main.py
+   ```
 
-## Recommended usage
+## Evaluation
 
-Use the receptionist agent as an async context manager so the underlying Azure and OpenAI clients are closed cleanly after each run.
+Run the automated routing evaluation against all 9 test cases:
 
-```python
-import asyncio
-
-from src.agents.receptionist import create_receptionist_agent
-
-
-async def main() -> None:
-	async with create_receptionist_agent() as agent:
-		response = await agent.run("Hello, what can you help me with?")
-		print(response.messages[0].text)
-
-
-asyncio.run(main())
+```bash
+uv run python scripts/run_manual_tests.py
 ```
 
-Notes:
+This uses the [azure-ai-evaluation](https://learn.microsoft.com/en-us/azure/ai-studio/how-to/develop/evaluate-sdk) SDK with four evaluators:
 
-- this avoids unclosed client session warnings
-- `main.py` remains a minimal smoke-test entry point
+| Evaluator | Type | Description |
+|---|---|---|
+| `routing_correctness` | Deterministic | Checks handler and handoff match expected values |
+| `ToolCallAccuracyEvaluator` | LLM-judged | Evaluates handoff tool call quality |
+| `CoherenceEvaluator` | LLM-judged | Response coherence (1–5) |
+| `RelevanceEvaluator` | LLM-judged | Response relevance to query (1–5) |
+
+Results are written to `data/manual_test_results_v1.json`.
+
+## Tracing
+
+OpenTelemetry traces are exported to Azure Application Insights and visible in the AI Foundry portal's **Tracing** tab.
+
+`setup_telemetry()` in `src/core/telemetry.py` is called at startup. It is a no-op if `APPLICATIONINSIGHTS_CONNECTION_STRING` is not set.
+
+## Infrastructure
+
+All Azure resources are managed with Terraform in `infra/`:
+
+- AI Foundry account + project
+- GPT model deployment (`gpt-53-chat`)
+- Evaluator model deployment (`gpt-4o` — required for LLM-judged evaluators)
+- Application Insights + Log Analytics
+- App Insights connection (enables Tracing in AI Foundry portal)
+- Storage account, Key Vault, RBAC role assignments
+
+```bash
+cd infra
+cp terraform.tfvars.example terraform.tfvars   # fill in values
+terraform init
+terraform plan -out=main.tfplan
+terraform apply main.tfplan
+```
 
 ## Environment variables
 
@@ -84,6 +100,14 @@ Required:
 ```dotenv
 AZURE_AI_PROJECT_ENDPOINT=https://your-project.cognitiveservices.azure.com/
 AZURE_AI_MODEL_DEPLOYMENT_NAME=gpt-53-chat
+```
+
+For evaluation (LLM-judged evaluators):
+
+```dotenv
+AZURE_EVAL_ENDPOINT=https://your-project.cognitiveservices.azure.com/
+AZURE_EVAL_DEPLOYMENT_NAME=gpt-4o
+AZURE_EVAL_API_VERSION=2024-06-01
 ```
 
 Optional:
@@ -95,9 +119,13 @@ APPLICATIONINSIGHTS_CONNECTION_STRING=InstrumentationKey=...;IngestionEndpoint=.
 Notes:
 
 - `.env` is ignored by git
-- process environment variables override values from `.env`
-- prefer `AZURE_AI_PROJECT_ENDPOINT` and `AZURE_AI_MODEL_DEPLOYMENT_NAME`
-- legacy `AZURE_OPENAI_ENDPOINT` and `AZURE_OPENAI_CHAT_DEPLOYMENT_NAME` are still accepted as fallback names
+- Process environment variables override values from `.env`
+
+## Out of scope (V1)
+
+- Real authentication
+- Real database / payment processing
+- Production-grade UI
 - both endpoint and deployment values must be present in `.env`
 
 ## Run

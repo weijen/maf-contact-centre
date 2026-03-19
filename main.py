@@ -1,6 +1,14 @@
 import asyncio
 
-from src.agents.receptionist import create_receptionist_agent
+from dotenv import load_dotenv
+
+load_dotenv()
+
+from src.core.telemetry import setup_telemetry  # noqa: E402
+
+setup_telemetry()
+
+from src.agents.receptionist import create_receptionist_agent  # noqa: E402
 
 
 async def _main_async() -> None:
