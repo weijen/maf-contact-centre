@@ -24,6 +24,11 @@ output "application_insights_connection_string" {
   sensitive   = true
 }
 
+output "eval_deployment_name" {
+  description = "Deployment name of the evaluator model"
+  value       = azapi_resource.eval_deployment.name
+}
+
 output "key_vault_uri" {
   description = "URI of the Key Vault"
   value       = azurerm_key_vault.hub.vault_uri

@@ -38,3 +38,31 @@ variable "model_capacity" {
   type        = number
   default     = 30
 }
+
+# ---------------------------------------------------------------------------
+# Evaluator model variables
+# ---------------------------------------------------------------------------
+
+variable "eval_model_deployment_name" {
+  description = "Deployment name for the evaluator model (Chat Completions API)"
+  type        = string
+  default     = "gpt-4o"
+}
+
+variable "eval_model_name" {
+  description = "OpenAI model name for evaluations"
+  type        = string
+  default     = "gpt-4o"
+}
+
+variable "eval_model_version" {
+  description = "OpenAI evaluator model version string"
+  type        = string
+  default     = "2024-08-06"
+}
+
+variable "eval_model_capacity" {
+  description = "Evaluator model deployment capacity (thousands of tokens per minute)"
+  type        = number
+  default     = 50
+}

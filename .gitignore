@@ -32,3 +32,8 @@ wheels/
 *.tfvars
 *.tfvars.json
 !.terraform.tfvars.example
+
+# Generated evaluation artifacts
+data/*.jsonl
+data/manual_test_results_*.json
+result.log

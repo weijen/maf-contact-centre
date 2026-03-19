@@ -45,6 +45,7 @@ def build_handoff_workflow(
     }
 
     builder = HandoffBuilder(participants=list(agents.values()))
+    builder.with_start_agent(agents[agent_names[0]])
 
     for rule in rules:
         source = agents[rule.from_agent]

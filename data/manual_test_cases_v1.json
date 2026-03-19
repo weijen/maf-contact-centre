@@ -1,44 +1,74 @@
 [
   {
-    "id": "faq-greeting-001",
-    "customer_message": "Hello",
-    "expected_agent": "receptionist",
-    "expected_behavior": "Greets the customer and offers help without a handoff."
+    "id": 1,
+    "input": "Hello",
+    "expected_handler": "receptionist",
+    "expected_handoff": false,
+    "category": "greeting",
+    "notes": "Simple greeting — receptionist should respond directly"
   },
   {
-    "id": "faq-hours-002",
-    "customer_message": "What are your office hours?",
-    "expected_agent": "receptionist",
-    "expected_behavior": "Answers the office hours question directly."
+    "id": 2,
+    "input": "What are your opening hours?",
+    "expected_handler": "receptionist",
+    "expected_handoff": false,
+    "category": "general_inquiry",
+    "notes": "General question — receptionist answers without handoff"
   },
   {
-    "id": "order-delivery-slot-003",
-    "customer_message": "Can I book a delivery slot for Friday morning?",
-    "expected_agent": "receptionist",
-    "expected_behavior": "Handles the delivery-slot request without involving a specialist."
+    "id": 3,
+    "input": "Can you help me book a delivery slot?",
+    "expected_handler": "receptionist",
+    "expected_handoff": false,
+    "category": "delivery",
+    "notes": "Delivery booking — receptionist handles via orders MCP server"
   },
   {
-    "id": "billing-balance-004",
-    "customer_message": "What is my account balance?",
-    "expected_agent": "billing",
-    "expected_behavior": "Routes to billing and asks for account verification before sharing sensitive details."
+    "id": 4,
+    "input": "Why was I charged twice this month?",
+    "expected_handler": "billing",
+    "expected_handoff": true,
+    "category": "billing",
+    "notes": "Payment dispute — should handoff to billing"
   },
   {
-    "id": "billing-payment-status-005",
-    "customer_message": "Has my latest payment gone through?",
-    "expected_agent": "billing",
-    "expected_behavior": "Routes to billing and requests verification before confirming payment status."
+    "id": 5,
+    "input": "I want to ask about my invoice.",
+    "expected_handler": "billing",
+    "expected_handoff": true,
+    "category": "billing",
+    "notes": "Invoice inquiry — should handoff to billing"
   },
   {
-    "id": "support-password-reset-006",
-    "customer_message": "I forgot my password and cannot sign in.",
-    "expected_agent": "support",
-    "expected_behavior": "Routes to support and provides password reset guidance."
+    "id": 6,
+    "input": "Can you check my account balance?",
+    "expected_handler": "billing",
+    "expected_handoff": true,
+    "category": "billing",
+    "notes": "Account balance — should handoff to billing"
   },
   {
-    "id": "support-ticket-007",
-    "customer_message": "The app crashes every time I open billing and I need a ticket.",
-    "expected_agent": "support",
-    "expected_behavior": "Routes to support, acknowledges troubleshooting, and offers ticket creation."
+    "id": 7,
+    "input": "I can't log in.",
+    "expected_handler": "support",
+    "expected_handoff": true,
+    "category": "technical",
+    "notes": "Login issue — should handoff to support"
+  },
+  {
+    "id": 8,
+    "input": "The app is not working.",
+    "expected_handler": "support",
+    "expected_handoff": true,
+    "category": "technical",
+    "notes": "App malfunction — should handoff to support"
+  },
+  {
+    "id": 9,
+    "input": "I need technical help with my account.",
+    "expected_handler": "support",
+    "expected_handoff": true,
+    "category": "technical",
+    "notes": "Technical account help — should handoff to support"
   }
 ]

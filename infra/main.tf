@@ -101,6 +101,7 @@ resource "azapi_resource" "ai_foundry" {
       disableLocalAuth       = false
       allowProjectManagement = true
       customSubDomainName    = "ais-maf-cc"
+      publicNetworkAccess    = "Enabled"
     }
   }
 
@@ -164,6 +165,32 @@ resource "azapi_resource" "gpt_deployment" {
   }
 
   depends_on = [azapi_resource.ai_foundry]
+}
+
+# ---------------------------------------------------------------------------
+# Evaluator Model Deployment (Chat Completions API for azure-ai-evaluation)
+# ---------------------------------------------------------------------------
+
+resource "azapi_resource" "eval_deployment" {
+  type      = "Microsoft.CognitiveServices/accounts/deployments@2025-06-01"
+  name      = var.eval_model_deployment_name
+  parent_id = azapi_resource.ai_foundry.id
+
+  body = {
+    sku = {
+      name     = "GlobalStandard"
+      capacity = var.eval_model_capacity
+    }
+    properties = {
+      model = {
+        format  = "OpenAI"
+        name    = var.eval_model_name
+        version = var.eval_model_version
+      }
+    }
+  }
+
+  depends_on = [azapi_resource.gpt_deployment]
 }
 
 # ---------------------------------------------------------------------------
