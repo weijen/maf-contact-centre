@@ -17,7 +17,12 @@ async def _main_async() -> None:
 
 
 def main() -> None:
-    asyncio.run(_main_async())
+    try:
+        asyncio.run(_main_async())
+    finally:
+        from src.core.telemetry import flush_telemetry
+
+        flush_telemetry()
 
 
 if __name__ == "__main__":

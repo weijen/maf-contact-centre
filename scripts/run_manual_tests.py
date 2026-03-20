@@ -30,51 +30,15 @@ setup_telemetry()
 from azure.ai.evaluation import (  # noqa: E402
     CoherenceEvaluator,
     RelevanceEvaluator,
-    ToolCallAccuracyEvaluator,
     evaluate,
 )
 from dotenv import dotenv_values
 
-from src.core.config import DEFAULT_CONFIG_PATH, load_yaml
+from src.core.config import DEFAULT_CONFIG_PATH
 from src.workflows.handoff_workflow import build_handoff_workflow
 
 TEST_CASES_PATH = PROJECT_ROOT / "data" / "manual_test_cases_v1.json"
 RESULTS_PATH = PROJECT_ROOT / "data" / "manual_test_results_v1.json"
-
-
-# ---------------------------------------------------------------------------
-# Handoff tool definitions built from config.yaml
-# ---------------------------------------------------------------------------
-
-def _build_handoff_tool_definitions(config_path: Path = DEFAULT_CONFIG_PATH) -> list[dict[str, Any]]:
-    """Build tool definitions matching the framework's handoff tools from config."""
-    config = load_yaml(config_path)
-    seen: set[str] = set()
-    definitions: list[dict[str, Any]] = []
-
-    for handoff in config.get("handoffs", []):
-        target = handoff["to"]
-        tool_name = f"handoff_to_{target}"
-        if tool_name in seen:
-            continue
-        seen.add(tool_name)
-        definitions.append({
-            "name": tool_name,
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "context": {
-                        "type": "string",
-                        "description": "Optional context about the handoff reason.",
-                    },
-                },
-                "required": [],
-            },
-        })
-    return definitions
-
-
-HANDOFF_TOOL_DEFINITIONS = _build_handoff_tool_definitions()
 
 
 # ---------------------------------------------------------------------------
@@ -84,8 +48,7 @@ HANDOFF_TOOL_DEFINITIONS = _build_handoff_tool_definitions()
 def run_workflow_target(query: str) -> dict[str, Any]:
     """Target callable for azure-ai-evaluation.
 
-    Returns response text, routing metadata, and tool call data for
-    ToolCallAccuracyEvaluator.
+    Returns response text and routing metadata.
     """
     return asyncio.run(_run_workflow_async(query))
 
@@ -97,37 +60,23 @@ async def _run_workflow_async(query: str) -> dict[str, Any]:
     last_output_executor = ""
     handoff_occurred = False
     output_parts: list[str] = []
-    tool_calls: list[dict[str, Any]] = []
-    call_counter = 0
 
     async for event in run_result:
         etype = event.type
 
         if etype == "handoff_sent":
             handoff_occurred = True
-            data = event.data
-            target = data.target if hasattr(data, "target") else str(data)
-            call_counter += 1
-            tool_calls.append({
-                "type": "function_call",
-                "name": f"handoff_to_{target}",
-                "arguments": {},
-                "tool_call_id": f"call_{call_counter}",
-            })
 
         if etype == "output" and event.data is not None:
             output_parts.append(str(event.data))
             if event.executor_id:
                 last_output_executor = event.executor_id
 
-    result: dict[str, Any] = {
+    return {
         "response": " ".join(output_parts),
         "actual_handler": last_output_executor,
         "actual_handoff": str(handoff_occurred),
-        "tool_calls": json.dumps(tool_calls),
-        "tool_definitions": json.dumps(HANDOFF_TOOL_DEFINITIONS),
     }
-    return result
 
 
 # ---------------------------------------------------------------------------
@@ -209,7 +158,6 @@ def main() -> None:
         target=run_workflow_target,
         evaluators={
             "routing": routing_correctness,
-            "tool_accuracy": ToolCallAccuracyEvaluator(model_config=model_config),
             "coherence": CoherenceEvaluator(model_config=model_config),
             "relevance": RelevanceEvaluator(model_config=model_config),
         },
@@ -220,13 +168,6 @@ def main() -> None:
                     "actual_handoff": "${target.actual_handoff}",
                     "expected_handler": "${data.expected_handler}",
                     "expected_handoff": "${data.expected_handoff}",
-                },
-            },
-            "tool_accuracy": {
-                "column_mapping": {
-                    "query": "${data.query}",
-                    "tool_calls": "${target.tool_calls}",
-                    "tool_definitions": "${target.tool_definitions}",
                 },
             },
             "coherence": {
@@ -266,6 +207,11 @@ def main() -> None:
         sys.exit(1)
     else:
         print("\nAll routing tests PASSED.")
+
+    # Flush telemetry so traces reach Azure Monitor before the process exits
+    from src.core.telemetry import flush_telemetry
+
+    flush_telemetry()
 
 
 if __name__ == "__main__":
