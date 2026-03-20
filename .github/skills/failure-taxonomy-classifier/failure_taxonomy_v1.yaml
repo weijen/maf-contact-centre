@@ -1,0 +1,104 @@
+version: v1
+
+primary_failure_enum:
+  - no_failure
+  - routing_failure
+  - handoff_failure
+  - response_failure
+  - policy_failure
+  - tool_failure
+  - evaluation_issue
+
+secondary_failure_enum:
+  routing:
+    - wrong_specialist
+    - should_have_stayed_at_receptionist
+    - missed_specialist_route
+
+  handoff:
+    - missed_handoff
+    - unnecessary_handoff
+    - looping_handoff
+
+  response:
+    - intent_not_addressed
+    - escalation_request_not_addressed
+    - generic_redirection
+    - incomplete_answer
+    - insufficient_empathy
+    - unhelpful_response
+    - off_tone
+
+  policy:
+    - unsupported_domain_handling
+    - policy_not_followed
+    - boundary_handling_issue
+
+  tool:
+    - tool_not_used
+    - tool_used_incorrectly
+    - tool_result_ignored
+
+  evaluation:
+    - ambiguous_gold_label
+    - judge_mismatch
+    - insufficient_context
+
+decision_priority:
+  - evaluation_issue
+  - policy_failure
+  - tool_failure
+  - routing_failure
+  - handoff_failure
+  - response_failure
+  - no_failure
+
+limits:
+  primary_failure_exactly_one: true
+  secondary_failures_min: 0
+  secondary_failures_max: 3
+  allow_free_style_secondary: false
+  allow_free_text_notes: true
+
+output_schema:
+  type: object
+  required:
+    - primary_failure
+    - secondary_failures
+    - failure_notes
+  properties:
+    primary_failure:
+      type: string
+      enum:
+        - no_failure
+        - routing_failure
+        - handoff_failure
+        - response_failure
+        - policy_failure
+        - tool_failure
+        - evaluation_issue
+    secondary_failures:
+      type: array
+      items:
+        type: string
+      maxItems: 3
+    failure_notes:
+      type: string
+
+heuristics:
+  escalation_requests:
+    preferred_primary: response_failure
+    preferred_secondary:
+      - escalation_request_not_addressed
+
+  route_wrong:
+    preferred_primary: routing_failure
+
+  handoff_wrong_with_route_correct:
+    preferred_primary: handoff_failure
+
+  route_and_handoff_correct_but_answer_misaligned:
+    preferred_primary: response_failure
+
+  ambiguous_case_labels:
+    preferred_primary: evaluation_issue
