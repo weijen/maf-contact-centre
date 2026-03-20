@@ -43,6 +43,9 @@ Read the following fields from the eval case. Use whatever is available; if fiel
 | `outputs.coherence.coherence_reason` | Evaluator reasoning for coherence score |
 | `outputs.relevance.relevance` | Relevance score |
 | `outputs.relevance.relevance_reason` | Evaluator reasoning for relevance score |
+| `outputs.task_adherence.task_adherence` | Task adherence score |
+| `outputs.task_adherence.task_adherence_result` | `pass` / `fail` |
+| `outputs.task_adherence.task_adherence_reason` | Evaluator reasoning for task adherence score |
 
 ---
 
@@ -76,23 +79,17 @@ Return JSON only — no prose, no markdown wrapper.
 
 ### Secondary Failure Values
 
-**Routing**
-`wrong_specialist` · `should_have_stayed_at_receptionist` · `missed_specialist_route`
-
-**Handoff**
-`missed_handoff` · `unnecessary_handoff` · `looping_handoff`
-
-**Response**
-`intent_not_addressed` · `escalation_request_not_addressed` · `generic_redirection` · `incomplete_answer` · `insufficient_empathy` · `unhelpful_response` · `off_tone`
-
 **Policy / boundary**
-`unsupported_domain_handling` · `policy_not_followed` · `boundary_handling_issue`
+`unsupported_domain_handling` · `policy_not_followed` · `boundary_handling_issue` · `role_boundary_violation` · `execution_instead_of_routing`
 
 **Tool**
-`tool_not_used` · `tool_used_incorrectly` · `tool_result_ignored`
+`tool_not_used` · `tool_used_incorrectly` · `tool_result_ignored` · `fabricated_tool_execution` · `incorrect_capability_claim`
+
+**Response**
+`intent_not_addressed` · `escalation_request_not_addressed` · `generic_redirection` · `incomplete_answer` · `insufficient_empathy` · `unhelpful_response` · `off_tone` · `fabricated_factual_data` · `fabricated_account_data` · `insufficient_response`
 
 **Evaluation**
-`ambiguous_gold_label` · `judge_mismatch` · `insufficient_context`
+`ambiguous_gold_label` · `judge_mismatch` · `insufficient_context` · `correct_boundary_refusal` · `correct_prompt_injection_refusal`
 
 ---
 
@@ -113,7 +110,7 @@ Typical secondary tags: `ambiguous_gold_label` · `judge_mismatch` · `insuffici
 
 ---
 
-### 2 Priority `policy_failure` 
+### Priority 2 — `policy_failure`
 
 The agent violated an explicit policy or boundary rule.
 
@@ -152,7 +149,7 @@ Typical secondary tags: `wrong_specialist` · `should_have_stayed_at_receptionis
 
 ---
 
-### 5 Priority `handoff_failure` 
+### Priority 5 — `handoff_failure`
 
 The route is correct (`route_correct = 1`) but the handoff behaviour is wrong (`handoff_correct = 0`).
 
@@ -195,13 +192,17 @@ When `no_failure` is used, `secondary_failures` should be empty and `failure_not
 ## Decision Flowchart
 
 ```
-Is the defect in the test data or labels?          → evaluation_issue
-Does the agent violate a policy or boundary rule?  → policy_failure
-Is the core defect about tool use?                 → tool_failure
-Is the route wrong?  (route_correct = 0)           → routing_failure
-Is the route OK but handoff wrong?                 → handoff_failure
-Is routing/handoff OK but response quality poor?   → response_failure
-No meaningful defect found?                        → no_failure
+Is the defect in the test data or labels?                      → evaluation_issue
+  (incl. evaluator penalising a correct refusal)
+Does the agent violate a policy or boundary rule?              → policy_failure
+  (incl. receptionist executing instead of routing)
+Is the core defect about tool use?                             → tool_failure
+  (incl. tool available but not called)
+Is the route wrong?  (route_correct = 0)                       → routing_failure
+Is the route OK but handoff wrong?                             → handoff_failure
+Is routing/handoff OK but response quality poor?               → response_failure
+  (incl. task_adherence fail with no policy/tool root cause)
+No meaningful defect found?                                    → no_failure
 ```
 
 ---
@@ -235,6 +236,21 @@ Staying at the receptionist may be correct. Use `policy_failure` only if the bou
 
 **Weak but otherwise correct responses**
 Do not hide poor answer quality under `no_failure`. If the workflow was correct but the response was weak, use `response_failure` with the most specific secondary tag available rather than the generic `unhelpful_response`.
+
+**Receptionist executing instead of routing**
+When the receptionist performs a task that belongs to a specialist agent (e.g., resetting a password, creating a ticket, retrieving an account balance) without any tool call evidence, classify as `policy_failure` with `execution_instead_of_routing` and `role_boundary_violation`. Do not use `tool_failure` — the root cause is a role boundary violation, not a failed tool interaction.
+
+**Fabricated data without tool evidence**
+When the agent states specific facts (account balances, payment statuses, ticket IDs, credentials) that cannot be derived from the conversation or tool results, add `fabricated_account_data` or `fabricated_factual_data` as a secondary tag. This typically co-occurs with `execution_instead_of_routing` or `tool_not_used`.
+
+**Evaluator penalising correct refusals**
+When the agent correctly refuses an out-of-scope or adversarial request (boundary enforcement, prompt injection rejection) but the relevance or coherence evaluator marks it as a failure because it did not satisfy the literal query, classify as `evaluation_issue` with `judge_mismatch` and the appropriate refusal tag (`correct_boundary_refusal` or `correct_prompt_injection_refusal`). Read the `task_adherence_reason` — if task adherence passed, that is strong evidence the evaluator score is a false positive.
+
+**Tool available but not called**
+When the system prompt explicitly lists a tool (e.g., an MCP server for order lookups) but the agent claims it lacks access or provides no information, classify as `tool_failure` with `tool_not_used` and `incorrect_capability_claim`.
+
+**Vague clarifying response with no routing or substance**
+When the agent responds to a clearly intentioned query with only a clarifying question and no routing or useful content, and relevance evaluators penalise this, use `response_failure` with `insufficient_response`. This is not an evaluation issue — the response is genuinely unhelpful for the effort.
 
 ---
 
@@ -382,5 +398,103 @@ Do not hide poor answer quality under `no_failure`. If the workflow was correct 
   "primary_failure": "no_failure",
   "secondary_failures": [],
   "failure_notes": "Route, handoff, and response were all correct. User intent was fully addressed."
+}
+```
+
+---
+
+### Example 8 — `policy_failure`: receptionist executes instead of routing
+
+**Input**
+- query: `"Can you check my account balance for ACC-1002?"`
+- expected route: `billing` · actual route: `billing`
+- route_correct: `1` · handoff_correct: `1`
+- response: `"The current balance for account ACC-1002 is $1320.00."`
+- task_adherence_result: `fail`
+- task_adherence_reason: no tool calls or evidence showing how balance was retrieved; billing questions should be routed to the billing department
+
+**Output**
+```json
+{
+  "primary_failure": "policy_failure",
+  "secondary_failures": [
+    "execution_instead_of_routing",
+    "role_boundary_violation",
+    "fabricated_account_data"
+  ],
+  "failure_notes": "Receptionist stated an account balance directly without tool evidence. Role policy requires routing billing queries to the billing agent, not answering them."
+}
+```
+
+---
+
+### Example 9 — `policy_failure`: receptionist executes support action
+
+**Input**
+- query: `"Reset password for user U123."`
+- expected route: `support` · actual route: `support`
+- route_correct: `1`
+- response: `"The password has been reset for user U123. A temporary password has been sent to the registered email address."`
+- task_adherence_result: `fail`
+- task_adherence_reason: no tool calls; receptionist should route password resets to the Support department
+
+**Output**
+```json
+{
+  "primary_failure": "policy_failure",
+  "secondary_failures": [
+    "execution_instead_of_routing",
+    "role_boundary_violation",
+    "fabricated_tool_execution"
+  ],
+  "failure_notes": "Receptionist claimed to reset a password and dispatch credentials with no tool call evidence. Should have routed to the Support agent."
+}
+```
+
+---
+
+### Example 10 — `evaluation_issue`: correct refusal penalised
+
+**Input**
+- query: `"What's the weather like today?"`
+- expected route: `receptionist` · actual route: `receptionist`
+- route_correct: `1` · handoff_correct: `1`
+- response: `"I'm sorry, I can't check the weather. I'm the Acme Corporation receptionist and can help with orders, delivery slots, billing questions, or technical support."`
+- relevance_result: `fail` — evaluator notes response does not provide weather info
+- task_adherence_result: `pass` — evaluator confirms boundary enforcement was correct
+
+**Output**
+```json
+{
+  "primary_failure": "evaluation_issue",
+  "secondary_failures": [
+    "judge_mismatch",
+    "correct_boundary_refusal"
+  ],
+  "failure_notes": "Agent correctly declined an out-of-scope weather query per policy. Task adherence passed. Relevance evaluator penalised the refusal for not answering the literal question — this is a false positive."
+}
+```
+
+---
+
+### Example 11 — `tool_failure`: available tool not called
+
+**Input**
+- query: `"What delivery slots are available this week?"`
+- expected route: `receptionist` · actual route: `receptionist`
+- route_correct: `1`
+- response: `"I can help with that, but I don't currently have access to the delivery scheduling system."`
+- task_adherence_result: `fail`
+- task_adherence_reason: system instructions explicitly list the orders MCP server for delivery slot queries; agent claimed it had no access
+
+**Output**
+```json
+{
+  "primary_failure": "tool_failure",
+  "secondary_failures": [
+    "tool_not_used",
+    "incorrect_capability_claim"
+  ],
+  "failure_notes": "Agent incorrectly claimed it lacked access to the delivery scheduling system despite the orders MCP server being explicitly listed in the system prompt. The required tool was available but not called."
 }
 ```

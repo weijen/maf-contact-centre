@@ -20,7 +20,7 @@ wheels/
 *.p12
 *.pfx
 
-# Pytest
+# Pytest1
 .pytest_cache/
 
 # Terraform
