@@ -1,28 +1,18 @@
-from unittest.mock import patch
-
 from src.tools.support_tools import SupportPlugin
 
 
 class TestCheckSystemStatus:
-    def test_returns_a_valid_status(self):
+    def test_returns_operational_status(self):
         plugin = SupportPlugin()
 
         result = plugin.check_system_status()
 
-        expected = [
-            "All systems operational",
-            "Minor delays in some regions",
-            "Maintenance scheduled",
-        ]
-        assert result in expected
+        assert result == "All systems operational"
 
-    def test_returns_specific_status_when_index_controlled(self):
+    def test_is_deterministic(self):
         plugin = SupportPlugin()
 
-        with patch("src.tools.support_tools.randint", return_value=0):
-            result = plugin.check_system_status()
-
-        assert result == "All systems operational"
+        assert plugin.check_system_status() == plugin.check_system_status()
 
 
 class TestResetPassword:
@@ -47,23 +37,23 @@ class TestCreateSupportTicket:
     def test_returns_ticket_id_and_details(self):
         plugin = SupportPlugin()
 
-        with patch("src.tools.support_tools.randint", return_value=12345):
-            result = plugin.create_support_ticket(
-                user_id="USR-789", issue_summary="Cannot login"
-            )
-
-        assert "TKT-12345" in result
-        assert "USR-789" in result
-        assert "Cannot login" in result
-
-    def test_ticket_id_format(self):
-        plugin = SupportPlugin()
-
         result = plugin.create_support_ticket(
-            user_id="USR-1", issue_summary="test"
+            user_id="USR-789", issue_summary="Cannot login"
         )
 
         assert "TKT-" in result
+        assert "USR-789" in result
+        assert "Cannot login" in result
+
+    def test_ticket_ids_are_sequential(self):
+        plugin = SupportPlugin()
+
+        result1 = plugin.create_support_ticket(user_id="USR-1", issue_summary="first")
+        result2 = plugin.create_support_ticket(user_id="USR-2", issue_summary="second")
+
+        assert result1 != result2
+        assert "TKT-" in result1
+        assert "TKT-" in result2
 
 
 class TestGetTroubleshootingSteps:
