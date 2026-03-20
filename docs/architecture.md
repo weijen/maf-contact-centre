@@ -86,10 +86,16 @@ The billing agent handles financial and account-related requests.
 #### Must not do
 - troubleshoot technical product issues
 - answer general company FAQ unless trivial
-- provide sensitive information without verification
+- provide sensitive information without verifying the caller's account ID
+- call tools without the required identifier (account ID, payment ID)
+- transfer the caller unless the question is clearly outside billing scope
 
 #### Notes
-Billing must verify account details before returning sensitive account information.
+Billing must confirm the caller's account ID before returning any account-specific
+information (balances, payment history, invoices). If the caller has not provided an
+identifier needed by a tool, the agent asks for it rather than guessing a default.
+When in doubt about scope, billing attempts to answer rather than transferring
+prematurely.
 
 ---
 
@@ -99,21 +105,29 @@ The support agent handles product and technical issues.
 
 #### Responsibilities
 - troubleshoot technical problems
-- provide step-by-step guidance
-- create or escalate support cases when needed
+- provide short, numbered step-by-step guidance
+- reset passwords (after verifying user ID)
+- check system status
+- create support tickets when an issue cannot be resolved quickly
 
 #### Allowed direct actions
 - diagnose technical issues
-- guide the user through troubleshooting steps
-- escalate difficult issues
+- guide the user through troubleshooting steps (one question at a time)
+- create a support ticket for follow-up
+- reset a password after confirming the caller's user ID
 
 #### Must not do
 - answer billing-specific questions
 - provide financial account details
 - invent unsupported solutions
+- perform sensitive actions (password reset, account lookup) without verifying the caller's user ID
+- transfer the caller unless the question is clearly outside support scope
 
 #### Notes
-Support should be patient, structured, and procedural.
+Support should be patient, concise, and procedural. If the issue cannot be resolved
+within a few troubleshooting steps, the agent creates a support ticket so the team
+can follow up. When in doubt about scope, support attempts to help rather than
+transferring prematurely.
 
 ---
 
@@ -193,13 +207,10 @@ You should document this explicitly:
 
 This will help a lot when building eval cases.
 
-### Suggestion 3: Add an escalation concept for support
-Even if you do not implement a fourth agent, note in the architecture that support can:
-- escalate unresolved issues
-- create a ticket
-- stop after collecting the required details
-
-This gives support a clean fallback behavior.
+### ~~Suggestion 3: Add an escalation concept for support~~
+_Implemented._ Support now creates a support ticket when an issue cannot be
+resolved within a few troubleshooting steps, providing a clean fallback
+behaviour without requiring a fourth agent.
 
 ---
 
@@ -213,15 +224,21 @@ Each agent should have a clear tool boundary.
 - delivery slot booking tool
 
 ### Billing tools
-- account lookup
-- invoice lookup
-- payment status lookup
-- payment arrangement tools
+- account balance lookup (`get_account_balance`)
+- payment status lookup (`check_payment_status`)
+- payment method listing (`get_payment_methods`)
+- payment processing (`process_payment`)
 
 ### Support tools
-- troubleshooting knowledge base
-- account access / password reset
-- ticket creation / escalation tools
+- system status check (`check_system_status`)
+- password reset (`reset_password`)
+- support ticket creation (`create_support_ticket`)
+- troubleshooting step lookup (`get_troubleshooting_steps`)
+
+### Mock data
+All tools return stable, deterministic data from `src/tools/mock_data.py` instead
+of calling a real backend. The mock layer contains frozen dataclasses for users,
+accounts, payments, and support tickets.
 
 This separation is important for evaluation because it allows us to measure:
 - routing correctness
@@ -236,10 +253,14 @@ This separation is important for evaluation because it allows us to measure:
 - must not reveal sensitive account data
 
 ### Billing
-- must verify account details before revealing sensitive financial information
+- must verify the caller's account ID before revealing any account-specific
+  financial information (balances, payment history, invoices)
+- must ask for missing identifiers (account ID, payment ID) before calling tools
 
 ### Support
-- must verify identity before performing sensitive account actions such as password reset
+- must verify the caller's user ID before performing sensitive actions such as
+  password reset or account lookup
+- must ask for missing identifiers before calling tools
 
 These rules are important candidates for future custom evaluators.
 
@@ -296,12 +317,12 @@ Included in v1:
 - billing and support specialists
 - handoff between all three agents
 - limited receptionist order and delivery support
-- mock or basic tools
+- stable mock data layer (`src/tools/mock_data.py`) backing all tools
 - evaluation dataset for routing and task completion
 
 Not included in v1:
 - production authentication
-- real billing backend
+- real billing backend (tools use mock data)
 - advanced memory
 - complex multi-step workflow planning
 - UI polish

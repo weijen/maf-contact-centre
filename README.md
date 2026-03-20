@@ -9,8 +9,8 @@ All conversations start with the **receptionist**, which triages and hands off a
 | Agent | Role |
 |---|---|
 | **Receptionist** | Greeting, office hours, triage; routes to billing or support |
-| **Billing** | Account balance, payment status, invoices, payment arrangements |
-| **Support** | Password reset, technical troubleshooting, escalation |
+| **Billing** | Account balance, payment status, invoices, payment arrangements. Verifies account ID before revealing sensitive data; asks for missing identifiers before acting. |
+| **Support** | Password reset, technical troubleshooting, ticket creation. Asks for user ID before sensitive actions; creates a ticket if the issue cannot be resolved quickly. |
 
 Handoffs are bidirectional between all three agents (configured in `config.yaml`).
 
@@ -22,6 +22,11 @@ config.yaml                     # agent definitions, system prompts, handoff rul
 src/
   agents/                       # agent factories (receptionist, billing, support)
   core/                         # shared config loading, telemetry
+  tools/
+    mock_data.py                # stable mock data (users, accounts, payments, tickets)
+    billing_tools.py            # billing agent tools (backed by mock_data)
+    support_tools.py            # support agent tools (backed by mock_data)
+    receptionist_tools.py       # receptionist agent tools
   workflows/                    # HandoffBuilder-based multi-agent workflow
 scripts/
   run_manual_tests.py           # automated evaluation runner
@@ -62,7 +67,6 @@ This uses the [azure-ai-evaluation](https://learn.microsoft.com/en-us/azure/ai-s
 | Evaluator | Type | Description |
 |---|---|---|
 | `routing_correctness` | Deterministic | Checks handler and handoff match expected values |
-| `ToolCallAccuracyEvaluator` | LLM-judged | Evaluates handoff tool call quality |
 | `CoherenceEvaluator` | LLM-judged | Response coherence (1–5) |
 | `RelevanceEvaluator` | LLM-judged | Response relevance to query (1–5) |
 
@@ -72,7 +76,7 @@ Results are written to `data/manual_test_results_v1.json`.
 
 OpenTelemetry traces are exported to Azure Application Insights and visible in the AI Foundry portal's **Tracing** tab.
 
-`setup_telemetry()` in `src/core/telemetry.py` is called at startup. It is a no-op if `APPLICATIONINSIGHTS_CONNECTION_STRING` is not set.
+`setup_telemetry()` in `src/core/telemetry.py` is called at startup. It is a no-op if `APPLICATIONINSIGHTS_CONNECTION_STRING` is not set. `flush_telemetry()` is called before process exit to ensure buffered spans are exported.
 
 ## Infrastructure
 
@@ -124,9 +128,8 @@ Notes:
 ## Out of scope (V1)
 
 - Real authentication
-- Real database / payment processing
+- Real database / payment processing (tools return stable mock data from `src/tools/mock_data.py`)
 - Production-grade UI
-- both endpoint and deployment values must be present in `.env`
 
 ## Run
 
