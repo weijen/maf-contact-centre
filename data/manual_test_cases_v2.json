@@ -1,0 +1,98 @@
+[
+    {
+    "id": 1,
+    "input": "Can you check my account balance for ACC-1002?",
+    "expected_handler": "billing",
+    "expected_handoff": true,
+    "category": "account_balance",
+    "notes": "Billing agent should handle account balance inquiries"
+    },
+    {
+    "id": 2,
+    "input": "What is the payment status for account ACC-1001 and payment PAY-2001?",
+    "expected_handler": "billing",
+    "expected_handoff": true,
+    "category": "payment_status",
+    "notes": "Billing agent should handle payment status inquiries"
+    },
+    {
+    "id": 3,
+    "input": "Please check my account balance. My account id is ACC-1003.",
+    "expected_handler": "billing",
+    "expected_handoff": true,
+    "category": "account_balance",
+    "notes": "Billing agent should handle account balance inquiries"
+    },
+    {
+    "id": 4,
+    "input": "Can you check my account balance?",
+    "expected_handler": "billing",
+    "expected_handoff": true,
+    "category": "billing_missing_info",
+    "notes": "Account ID missing — billing agent should ask for it"
+    },
+    {
+    "id": 5,
+    "input": "What is my payment status?",
+    "expected_handler": "billing",
+    "expected_handoff": true,
+    "category": "billing_missing_info",
+    "notes": "Account ID and payment ID missing — billing agent should ask"
+    },
+    {
+    "id": 6,
+    "input": "I have a billing issue.",
+    "expected_handler": "billing",
+    "expected_handoff": true,
+    "category": "billing_missing_info",
+    "notes": "Vague billing request — billing agent should ask for details"
+    },
+    {
+    "id": 7,
+    "input": "Reset password for user U123.",
+    "expected_handler": "support",
+    "expected_handoff": true,
+    "category": "support_with_info",
+    "notes": "User ID provided — support agent should proceed with reset"
+    },
+    {
+    "id": 8,
+    "input": "Please create a support ticket for my login problem. My user id is U456.",
+    "expected_handler": "support",
+    "expected_handoff": true,
+    "category": "support_with_info",
+    "notes": "User ID provided — support agent should create ticket"
+    },
+    {
+    "id": 9,
+    "input": "I need help resetting my password for U789.",
+    "expected_handler": "support",
+    "expected_handoff": true,
+    "category": "support_with_info",
+    "notes": "User ID provided — support agent should proceed with reset"
+    },
+    {
+    "id": 10,
+    "input": "Reset my password.",
+    "expected_handler": "support",
+    "expected_handoff": true,
+    "category": "support_missing_info",
+    "notes": "User ID missing — support agent should ask for it"
+    },
+    {
+    "id": 11,
+    "input": "I need technical help.",
+    "expected_handler": "support",
+    "expected_handoff": true,
+    "category": "support_missing_info",
+    "notes": "Vague support request — support agent should ask for details"
+    },
+    {
+    "id": 12,
+    "input": "Create a support ticket for me.",
+    "expected_handler": "support",
+    "expected_handoff": true,
+    "category": "support_missing_info",
+    "notes": "User ID and issue details missing — support agent should ask"
+    }
+]

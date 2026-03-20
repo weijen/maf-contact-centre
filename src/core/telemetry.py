@@ -28,16 +28,19 @@ def setup_telemetry() -> None:
     enable_instrumentation(enable_sensitive_data=True)
 
 
-def flush_telemetry(timeout_millis: int = 10_000) -> None:
-    """Flush any pending spans, metrics, and logs to Azure Monitor.
+def flush_telemetry() -> None:
+    """Force-flush all OpenTelemetry providers so pending spans/metrics/logs are exported."""
+    from opentelemetry import trace, metrics
+    from opentelemetry._logs import get_logger_provider
 
-    Call this before the process exits so that the ``BatchSpanProcessor``
-    actually ships buffered data.  Safe to call even when telemetry was
-    never configured — the SDK ``force_flush`` is a no-op in that case.
-    """
-    from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.trace import get_tracer_provider
+    tp = trace.get_tracer_provider()
+    if hasattr(tp, "force_flush"):
+        tp.force_flush()
 
-    provider = get_tracer_provider()
-    if isinstance(provider, TracerProvider):
-        provider.force_flush(timeout_millis=timeout_millis)
+    mp = metrics.get_meter_provider()
+    if hasattr(mp, "force_flush"):
+        mp.force_flush()
+
+    lp = get_logger_provider()
+    if hasattr(lp, "force_flush"):
+        lp.force_flush()

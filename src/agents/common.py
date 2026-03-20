@@ -115,7 +115,7 @@ def build_chat_client(
 ) -> OpenAIResponsesClient:
     model_config = load_azure_ai_model_config(env_path=env_path)
     owns_credential = credential is None
-    resolved_credential = credential or DefaultAzureCredential()
+    resolved_credential = credential or DefaultAzureCredential(exclude_managed_identity_credential=True)
     project_client = AIProjectClient(
         endpoint=model_config.project_endpoint,
         credential=resolved_credential,

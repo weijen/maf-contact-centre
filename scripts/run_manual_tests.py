@@ -37,8 +37,8 @@ from dotenv import dotenv_values
 from src.core.config import DEFAULT_CONFIG_PATH
 from src.workflows.handoff_workflow import build_handoff_workflow
 
-TEST_CASES_PATH = PROJECT_ROOT / "data" / "manual_test_cases_v1.json"
-RESULTS_PATH = PROJECT_ROOT / "data" / "manual_test_results_v1.json"
+TEST_CASES_PATH = PROJECT_ROOT / "data" / "manual_test_cases_v2.json"
+RESULTS_PATH = PROJECT_ROOT / "data" / "manual_test_results_v2.json"
 
 
 # ---------------------------------------------------------------------------
@@ -73,7 +73,7 @@ async def _run_workflow_async(query: str) -> dict[str, Any]:
                 last_output_executor = event.executor_id
 
     return {
-        "response": " ".join(output_parts),
+        "response": "".join(output_parts).strip(),
         "actual_handler": last_output_executor,
         "actual_handoff": str(handoff_occurred),
     }
@@ -119,7 +119,7 @@ def prepare_dataset(cases_path: Path = TEST_CASES_PATH) -> Path:
     with open(cases_path) as f:
         cases = json.load(f)
 
-    jsonl_path = cases_path.parent / "manual_test_cases_v1.jsonl"
+    jsonl_path = cases_path.with_suffix(".jsonl")
     with open(jsonl_path, "w") as f:
         for case in cases:
             row = {
