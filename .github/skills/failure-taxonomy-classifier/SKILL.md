@@ -43,6 +43,9 @@ Read the following fields from the eval case. Use whatever is available; if fiel
 | `outputs.coherence.coherence_reason` | Evaluator reasoning for coherence score |
 | `outputs.relevance.relevance` | Relevance score |
 | `outputs.relevance.relevance_reason` | Evaluator reasoning for relevance score |
+| `outputs.agent_plugins` | Plugins available to the responding agent, if present |
+| `outputs.agent_available_tools` | Tool names available to the responding agent, if present |
+| `outputs.conversation_response` | Full response trace including tool calls/results, if present |
 | `outputs.task_adherence.task_adherence` | Task adherence score |
 | `outputs.task_adherence.task_adherence_result` | `pass` / `fail` |
 | `outputs.task_adherence.task_adherence_reason` | Evaluator reasoning for task adherence score |
@@ -243,11 +246,17 @@ When the receptionist performs a task that belongs to a specialist agent (e.g., 
 **Fabricated data without tool evidence**
 When the agent states specific facts (account balances, payment statuses, ticket IDs, credentials) that cannot be derived from the conversation or tool results, add `fabricated_account_data` or `fabricated_factual_data` as a secondary tag. This typically co-occurs with `execution_instead_of_routing` or `tool_not_used`.
 
+**Do not equate missing trace with fabrication**
+If the eval result does not include tool-call traces, do not assume the answer was fabricated solely because the file lacks explicit tool evidence. First check whether the responding agent had a trusted local tool or plugin capable of producing that fact. If the answer is consistent with an allowed, grounded capability (for example, receptionist office hours exposed by a receptionist tool), prefer `no_failure` unless there is explicit evidence that the agent claimed unsupported facts or incorrectly said it lacked access.
+
 **Evaluator penalising correct refusals**
 When the agent correctly refuses an out-of-scope or adversarial request (boundary enforcement, prompt injection rejection) but the relevance or coherence evaluator marks it as a failure because it did not satisfy the literal query, classify as `evaluation_issue` with `judge_mismatch` and the appropriate refusal tag (`correct_boundary_refusal` or `correct_prompt_injection_refusal`). Read the `task_adherence_reason` — if task adherence passed, that is strong evidence the evaluator score is a false positive.
 
 **Tool available but not called**
 When the system prompt explicitly lists a tool (e.g., an MCP server for order lookups) but the agent claims it lacks access or provides no information, classify as `tool_failure` with `tool_not_used` and `incorrect_capability_claim`.
+
+**Tool available and answer matches grounded capability**
+When the responding agent has an explicitly available trusted tool for the requested fact, and the answer is directly consistent with that tool's documented output, do not label the case as `fabricated_factual_data` or `fabricated_account_data` unless the trace positively shows the tool was skipped or the answer contradicts the tool's expected result.
 
 **Vague clarifying response with no routing or substance**
 When the agent responds to a clearly intentioned query with only a clarifying question and no routing or useful content, and relevance evaluators penalise this, use `response_failure` with `insufficient_response`. This is not an evaluation issue — the response is genuinely unhelpful for the effort.

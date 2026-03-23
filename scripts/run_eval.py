@@ -20,6 +20,8 @@ import time
 from pathlib import Path
 from typing import Any
 
+from agent_framework import AgentResponseUpdate, FunctionTool
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -38,7 +40,9 @@ from azure.ai.evaluation import (  # noqa: E402
 )
 from dotenv import dotenv_values  # noqa: E402
 
+from src.agents.common import load_agent_definition  # noqa: E402
 from src.core.config import DEFAULT_CONFIG_PATH  # noqa: E402
+from src.tools import PLUGIN_REGISTRY  # noqa: E402
 from src.workflows.handoff_workflow import build_handoff_workflow  # noqa: E402
 
 DEFAULT_DATASET = PROJECT_ROOT / "data" / "eval_dataset_v1.jsonl"
@@ -49,6 +53,44 @@ _MAX_RETRIES = 4
 _BASE_DELAY = 5.0
 
 logger = logging.getLogger(__name__)
+
+
+def _tool_names_for_plugins(plugin_names: list[str]) -> list[str]:
+    tool_names: list[str] = []
+
+    for plugin_name in plugin_names:
+        plugin_cls = PLUGIN_REGISTRY.get(plugin_name)
+        if plugin_cls is None:
+            continue
+
+        instance = plugin_cls()
+        for attr_name in vars(type(instance)):
+            attr = getattr(instance, attr_name)
+            if isinstance(attr, FunctionTool):
+                tool_names.append(attr_name)
+
+    return tool_names
+
+
+_AGENT_DEFINITIONS = {
+    name: load_agent_definition(name)
+    for name in ("receptionist", "billing", "support")
+}
+
+_AGENT_INSTRUCTIONS: dict[str, str] = {
+    name: definition.instructions
+    for name, definition in _AGENT_DEFINITIONS.items()
+}
+
+_AGENT_PLUGINS: dict[str, list[str]] = {
+    name: definition.plugins
+    for name, definition in _AGENT_DEFINITIONS.items()
+}
+
+_AGENT_AVAILABLE_TOOLS: dict[str, list[str]] = {
+    name: _tool_names_for_plugins(definition.plugins)
+    for name, definition in _AGENT_DEFINITIONS.items()
+}
 
 
 # ---------------------------------------------------------------------------
@@ -79,8 +121,20 @@ def run_workflow_target(query: str) -> dict[str, Any]:
                     "response": f"[ERROR] {exc}",
                     "actual_route": "",
                     "actual_handoff": "False",
+                    "conversation_query": "[]",
+                    "conversation_response": "[]",
+                    "agent_plugins": "[]",
+                    "agent_available_tools": "[]",
                 }
-    return {"response": "", "actual_route": "", "actual_handoff": "False"}
+    return {
+        "response": "",
+        "actual_route": "",
+        "actual_handoff": "False",
+        "conversation_query": "[]",
+        "conversation_response": "[]",
+        "agent_plugins": "[]",
+        "agent_available_tools": "[]",
+    }
 
 
 async def _run_workflow_async(query: str) -> dict[str, Any]:
@@ -90,6 +144,7 @@ async def _run_workflow_async(query: str) -> dict[str, Any]:
     last_output_executor = ""
     handoff_occurred = False
     output_parts: list[str] = []
+    response_messages: list[dict[str, Any]] = []
 
     async for event in run_result:
         etype = event.type
@@ -97,15 +152,71 @@ async def _run_workflow_async(query: str) -> dict[str, Any]:
         if etype == "handoff_sent":
             handoff_occurred = True
 
+        if etype == "data" and event.data is not None and isinstance(event.data, AgentResponseUpdate):
+            for content in event.data.contents:
+                if content.type == "function_call":
+                    response_messages.append(
+                        {
+                            "role": "assistant",
+                            "content": [
+                                {
+                                    "type": "tool_call",
+                                    "tool_call": {
+                                        "id": content.call_id,
+                                        "type": "function",
+                                        "function": {
+                                            "name": content.name,
+                                            "arguments": content.arguments,
+                                        },
+                                    },
+                                }
+                            ],
+                        }
+                    )
+                elif content.type == "function_result":
+                    response_messages.append(
+                        {
+                            "role": "tool",
+                            "tool_call_id": content.call_id,
+                            "content": [
+                                {
+                                    "type": "tool_result",
+                                    "tool_result": str(content.result),
+                                }
+                            ],
+                        }
+                    )
+
         if etype == "output" and event.data is not None:
             output_parts.append(str(event.data))
             if event.executor_id:
                 last_output_executor = event.executor_id
 
+    responding_agent = last_output_executor or "receptionist"
+    agent_instructions = _AGENT_INSTRUCTIONS.get(responding_agent, _AGENT_INSTRUCTIONS["receptionist"])
+    agent_plugins = _AGENT_PLUGINS.get(responding_agent, [])
+    agent_available_tools = _AGENT_AVAILABLE_TOOLS.get(responding_agent, [])
+
+    response_messages.append(
+        {
+            "role": "assistant",
+            "content": [{"type": "text", "text": "".join(output_parts).strip()}],
+        }
+    )
+
     return {
         "response": "".join(output_parts).strip(),
         "actual_route": last_output_executor,
         "actual_handoff": str(handoff_occurred),
+        "conversation_query": json.dumps(
+            [
+                {"role": "system", "content": agent_instructions},
+                {"role": "user", "content": query},
+            ]
+        ),
+        "conversation_response": json.dumps(response_messages),
+        "agent_plugins": json.dumps(agent_plugins),
+        "agent_available_tools": json.dumps(agent_available_tools),
     }
 
 
