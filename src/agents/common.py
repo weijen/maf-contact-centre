@@ -75,7 +75,7 @@ def load_agent_definition(agent_name: str, config_path: Path = DEFAULT_CONFIG_PA
         if agent.get("name") != agent_name:
             continue
 
-        instructions = agent["instructions"]
+        instructions = _resolve_instructions(agent, config_path)
         if not instructions.endswith("\n"):
             instructions = f"{instructions}\n"
 
@@ -87,6 +87,32 @@ def load_agent_definition(agent_name: str, config_path: Path = DEFAULT_CONFIG_PA
         )
 
     raise ValueError(f"Could not find an agent definition for {agent_name} in {config_path}.")
+
+
+def _resolve_instructions(agent: dict[str, Any], config_path: Path) -> str:
+    """Return instructions from an inline string or an external file reference."""
+    instructions_file = agent.get("instructions_file")
+    instructions_inline = agent.get("instructions")
+
+    if instructions_file and instructions_inline:
+        raise ValueError(
+            f"Agent '{agent.get('name')}' defines both 'instructions' and 'instructions_file'. Use only one."
+        )
+    if not instructions_file and not instructions_inline:
+        raise ValueError(
+            f"Agent '{agent.get('name')}' must define either 'instructions' or 'instructions_file'."
+        )
+
+    if instructions_inline:
+        return instructions_inline
+
+    file_path = config_path.parent / instructions_file
+    if not file_path.is_file():
+        raise FileNotFoundError(
+            f"Instructions file '{instructions_file}' for agent '{agent.get('name')}' "
+            f"not found at {file_path}."
+        )
+    return file_path.read_text(encoding="utf-8")
 
 
 def load_azure_ai_model_config(env_path: Path = DEFAULT_ENV_PATH) -> AzureAIModelConfig:

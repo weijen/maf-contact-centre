@@ -19,7 +19,7 @@ from src.agents.common import (
         ("support", "Support desk", "Fix product issues.\n"),
     ],
 )
-def test_load_agent_definition_reads_prompt_from_config(tmp_path, agent_name, description, instructions):
+def test_load_agent_definition_reads_inline_instructions(tmp_path, agent_name, description, instructions):
     config_path = tmp_path / "config.yaml"
     config_path.write_text(
         """
@@ -44,6 +44,73 @@ agents:
     assert definition.name == agent_name
     assert definition.description == description
     assert definition.instructions == instructions
+
+
+def test_load_agent_definition_reads_instructions_file(tmp_path):
+    prompts_dir = tmp_path / "prompts"
+    prompts_dir.mkdir()
+    prompt_file = prompts_dir / "greeter.md"
+    prompt_file.write_text("You are a greeter.\n", encoding="utf-8")
+
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        """
+agents:
+  - name: greeter
+    description: A greeter
+    instructions_file: "prompts/greeter.md"
+""".strip()
+    )
+
+    definition = load_agent_definition("greeter", config_path)
+
+    assert definition.name == "greeter"
+    assert definition.instructions == "You are a greeter.\n"
+
+
+def test_load_agent_definition_raises_when_both_instructions_and_file(tmp_path):
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        """
+agents:
+  - name: bad
+    description: Ambiguous
+    instructions: "inline text"
+    instructions_file: "some/file.md"
+""".strip()
+    )
+
+    with pytest.raises(ValueError, match="both"):
+        load_agent_definition("bad", config_path)
+
+
+def test_load_agent_definition_raises_when_no_instructions(tmp_path):
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        """
+agents:
+  - name: empty
+    description: No instructions
+""".strip()
+    )
+
+    with pytest.raises(ValueError, match="must define"):
+        load_agent_definition("empty", config_path)
+
+
+def test_load_agent_definition_raises_when_file_not_found(tmp_path):
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        """
+agents:
+  - name: ghost
+    description: Missing file
+    instructions_file: "does_not_exist.md"
+""".strip()
+    )
+
+    with pytest.raises(FileNotFoundError, match="does_not_exist.md"):
+        load_agent_definition("ghost", config_path)
 
 
 def test_load_agent_definition_raises_when_missing(tmp_path):

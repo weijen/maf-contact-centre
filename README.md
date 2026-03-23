@@ -18,8 +18,9 @@ Handoffs are bidirectional between all three agents (configured in `config.yaml`
 
 ```
 main.py                         # entry point — interactive conversation
-config.yaml                     # agent definitions, system prompts, handoff rules
+config.yaml                     # agent definitions, handoff rules, orchestration
 src/
+  prompts/                      # system prompts for each agent (markdown files)
   agents/                       # agent factories (receptionist, billing, support)
   core/                         # shared config loading, telemetry
   tools/
@@ -166,3 +167,62 @@ The receptionist agent currently reads configuration from these sources:
 
 1. `config.yaml` for agent description and system prompt
 2. `.env` for Azure AI project endpoint and model deployment name
+
+## Configuring agents in `config.yaml`
+
+### Agent definitions
+
+Each entry under `agents:` defines an AI persona. Required fields:
+
+| Field | Description |
+|---|---|
+| `name` | Unique identifier (lowercase, underscores only) |
+| `description` | Used in handoff function descriptions — helps the model decide when to transfer |
+| `instructions` **or** `instructions_file` | System prompt (provide exactly one, not both) |
+
+Optional fields: `voice` (TTS voice), `plugins` (list of tool plugin names), `mcp` (list of MCP server names).
+
+#### Inline instructions
+
+Short prompts can be written directly in `config.yaml`:
+
+```yaml
+agents:
+  - name: "greeter"
+    description: "A friendly greeter"
+    instructions: |
+      You are a friendly greeter. Say hello and ask how you can help.
+```
+
+#### External instruction files
+
+For longer prompts, point to a markdown file with `instructions_file` (path is relative to `config.yaml`):
+
+```yaml
+agents:
+  - name: "receptionist"
+    description: "A friendly receptionist who greets callers and routes them"
+    instructions_file: "src/prompts/receptionist.md"
+    plugins:
+      - "receptionist_tools"
+```
+
+The prompt files live in `src/prompts/` and can be edited independently of the config.
+
+### Handoff rules
+
+The `handoffs:` section defines which agents can transfer to which. The system automatically injects `transfer_to_<agent>()` functions:
+
+```yaml
+handoffs:
+  - from: "receptionist"
+    to: "billing"
+    description: "Transfer to billing for payment and account questions"
+```
+
+### Orchestration settings
+
+```yaml
+orchestration:
+  silent_handoffs: true   # when true, agents transfer without announcing it
+```

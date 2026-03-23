@@ -34,17 +34,12 @@ setup_telemetry()
 from azure.ai.evaluation import (  # noqa: E402
     CoherenceEvaluator,
     RelevanceEvaluator,
-    TaskAdherenceEvaluator,
     evaluate,
 )
 from dotenv import dotenv_values  # noqa: E402
 
-from src.agents.common import load_agent_definition  # noqa: E402
 from src.core.config import DEFAULT_CONFIG_PATH  # noqa: E402
 from src.workflows.handoff_workflow import build_handoff_workflow  # noqa: E402
-
-# Load the receptionist system prompt so TaskAdherenceEvaluator knows the agent's role
-_RECEPTIONIST_INSTRUCTIONS = load_agent_definition("receptionist").instructions
 
 DEFAULT_DATASET = PROJECT_ROOT / "data" / "eval_dataset_v1.jsonl"
 
@@ -74,7 +69,17 @@ def run_workflow_target(query: str) -> dict[str, Any]:
                         logger.warning("Rate limited (attempt %d/%d), retrying in %.0fs", attempt + 1, _MAX_RETRIES, delay)
                         time.sleep(delay)
                         continue
-                raise
+                if attempt < _MAX_RETRIES:
+                    delay = _BASE_DELAY * (2 ** attempt)
+                    logger.warning("Transient error (attempt %d/%d), retrying in %.0fs: %s", attempt + 1, _MAX_RETRIES, delay, exc)
+                    time.sleep(delay)
+                    continue
+                logger.error("Workflow failed after %d retries for query '%.60s': %s", _MAX_RETRIES, query, exc)
+                return {
+                    "response": f"[ERROR] {exc}",
+                    "actual_route": "",
+                    "actual_handoff": "False",
+                }
     return {"response": "", "actual_route": "", "actual_handoff": "False"}
 
 
@@ -101,15 +106,6 @@ async def _run_workflow_async(query: str) -> dict[str, Any]:
         "response": "".join(output_parts).strip(),
         "actual_route": last_output_executor,
         "actual_handoff": str(handoff_occurred),
-        "conversation_query": json.dumps(
-            [
-                {"role": "system", "content": _RECEPTIONIST_INSTRUCTIONS},
-                {"role": "user", "content": query},
-            ]
-        ),
-        "conversation_response": json.dumps(
-            [{"role": "assistant", "content": [{"type": "text", "text": "".join(output_parts).strip()}]}]
-        ),
     }
 
 
@@ -237,7 +233,6 @@ def main() -> None:
             "routing": routing_correctness,
             "coherence": CoherenceEvaluator(model_config=model_config, is_reasoning_model=is_reasoning),
             "relevance": RelevanceEvaluator(model_config=model_config, is_reasoning_model=is_reasoning),
-            "task_adherence": TaskAdherenceEvaluator(model_config=model_config, is_reasoning_model=is_reasoning),
         },
         evaluator_config={
             "routing": {
@@ -259,12 +254,6 @@ def main() -> None:
                 "column_mapping": {
                     "query": "${data.query}",
                     "response": "${target.response}",
-                },
-            },
-            "task_adherence": {
-                "column_mapping": {
-                    "query": "${target.conversation_query}",
-                    "response": "${target.conversation_response}",
                 },
             },
         },
