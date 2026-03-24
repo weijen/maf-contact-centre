@@ -26,7 +26,7 @@ This is a task-specific workflow skill, not a coding-standard instruction. It sh
 Use these paths unless the user explicitly asks for different ones:
 
 - Eval artifact: `data/eval_results_v1_DD-MM-YYYY_testN.json`
-- Daily report: `data/notes/failure-taxonomy-report-DD-MM-YY.md`
+- Daily report: `data/notes/failure-taxonomy-report-DD-MM-YY_testN.md`
 
 Rules:
 

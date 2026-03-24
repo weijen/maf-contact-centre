@@ -148,3 +148,47 @@ handoffs:
 
     called_names = sorted(c.args[0] for c in create_agent_mock.call_args_list)
     assert called_names == ["billing", "receptionist"]
+
+    builder_instance.build.assert_called_once()
+    assert workflow is builder_instance.build.return_value
+
+
+@patch("src.workflows.handoff_workflow.HandoffBuilder")
+@patch("src.workflows.handoff_workflow.create_agent")
+def test_build_handoff_workflow_reuses_provided_agents(
+    create_agent_mock, handoff_builder_cls, tmp_path
+):
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        """
+agents:
+  - name: receptionist
+    description: Receptionist
+    instructions: Greet callers.
+  - name: billing
+    description: Billing
+    instructions: Handle billing.
+handoffs:
+  - from: receptionist
+    to: billing
+    description: Transfer to billing
+""".strip()
+    )
+
+    receptionist = MagicMock(name="receptionist_agent")
+    receptionist.name = "receptionist"
+    billing = MagicMock(name="billing_agent")
+    billing.name = "billing"
+    provided_agents = {
+        "receptionist": receptionist,
+        "billing": billing,
+    }
+    builder_instance = handoff_builder_cls.return_value
+
+    workflow = build_handoff_workflow(config_path=config_path, agents=provided_agents)
+
+    create_agent_mock.assert_not_called()
+    handoff_builder_cls.assert_called_once_with(participants=[receptionist, billing])
+    builder_instance.with_start_agent.assert_called_once_with(receptionist)
+    builder_instance.add_handoff.assert_called_once_with(receptionist, [billing], description="Transfer to billing")
+    assert workflow is builder_instance.build.return_value

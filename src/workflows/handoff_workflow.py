@@ -35,21 +35,27 @@ def build_handoff_workflow(
     *,
     config_path: Path = DEFAULT_CONFIG_PATH,
     client: OpenAIResponsesClient | None = None,
+    agents: dict[str, Agent] | None = None,
 ) -> Workflow:
     rules = load_handoff_policy(config_path)
 
     agent_names = _unique_agent_names(rules)
-    agents: dict[str, Agent] = {
+    resolved_agents = agents or {
         name: create_agent(name, config_path=config_path, client=client)
         for name in agent_names
     }
 
-    builder = HandoffBuilder(participants=list(agents.values()))
-    builder.with_start_agent(agents[agent_names[0]])
+    missing_agent_names = [name for name in agent_names if name not in resolved_agents]
+    if missing_agent_names:
+        raise ValueError(f"Missing agents for handoff workflow: {missing_agent_names}")
+
+    participants = [resolved_agents[name] for name in agent_names]
+    builder = HandoffBuilder(participants=participants)
+    builder.with_start_agent(resolved_agents[agent_names[0]])
 
     for rule in rules:
-        source = agents[rule.from_agent]
-        target = agents[rule.to_agent]
+        source = resolved_agents[rule.from_agent]
+        target = resolved_agents[rule.to_agent]
         builder.add_handoff(source, [target], description=rule.description)
 
     return builder.build()

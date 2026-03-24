@@ -76,4 +76,6 @@ applyTo: "**/*.py"
 ## Dependencies
 
 - Target Python **3.12+** — use modern syntax and stdlib features.
-- Use `uv` for dependency management. Add dependencies to `pyproject.toml`, not `requirements.txt`.
+- Use `uv` for dependency management. Add dependencies with `uv add`, run commands with `uv run`, and sync environments with `uv sync`.
+- Do not use `pip install` directly for project dependencies unless the user explicitly asks for it.
+- Add dependencies to `pyproject.toml`, not `requirements.txt`.
