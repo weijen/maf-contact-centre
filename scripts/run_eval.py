@@ -330,7 +330,7 @@ def main() -> None:
         "api_version": env_values.get("AZURE_EVAL_API_VERSION", "2024-06-01"),
     }
 
-    # Newer models (e.g. gpt-5.3-chat) require max_completion_tokens instead of max_tokens
+    # Newer models (e.g. gpt-5.4-mini) require max_completion_tokens instead of max_tokens
     deployment = model_config["azure_deployment"]
     is_reasoning = "gpt-5" in deployment or "o1" in deployment or "o3" in deployment
 

@@ -33,3 +33,8 @@ output "key_vault_uri" {
   description = "URI of the Key Vault"
   value       = azurerm_key_vault.hub.vault_uri
 }
+
+output "model_deployment_name" {
+  description = "Deployment name of the main model"
+  value       = azapi_resource.gpt_deployment.name
+}

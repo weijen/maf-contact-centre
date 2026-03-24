@@ -127,7 +127,7 @@ def test_load_azure_ai_model_config_reads_env_file(tmp_path, monkeypatch):
         "\n".join(
             [
                 "AZURE_AI_PROJECT_ENDPOINT=https://env-example.cognitiveservices.azure.com/",
-                "AZURE_AI_MODEL_DEPLOYMENT_NAME=gpt-53-chat-env",
+                "AZURE_AI_MODEL_DEPLOYMENT_NAME=gpt-54-mini-env",
             ]
         )
     )
@@ -140,7 +140,7 @@ def test_load_azure_ai_model_config_reads_env_file(tmp_path, monkeypatch):
     model_config = load_azure_ai_model_config(env_path=env_path)
 
     assert model_config.project_endpoint == "https://env-example.cognitiveservices.azure.com/"
-    assert model_config.model_deployment_name == "gpt-53-chat-env"
+    assert model_config.model_deployment_name == "gpt-54-mini-env"
 
 
 def test_load_azure_ai_model_config_accepts_legacy_openai_env_names(tmp_path, monkeypatch):
@@ -149,7 +149,7 @@ def test_load_azure_ai_model_config_accepts_legacy_openai_env_names(tmp_path, mo
         "\n".join(
             [
                 "AZURE_OPENAI_ENDPOINT=https://legacy-example.cognitiveservices.azure.com/",
-                "AZURE_OPENAI_CHAT_DEPLOYMENT_NAME=gpt-53-chat-legacy",
+                "AZURE_OPENAI_CHAT_DEPLOYMENT_NAME=gpt-54-mini-legacy",
             ]
         )
     )
@@ -162,7 +162,7 @@ def test_load_azure_ai_model_config_accepts_legacy_openai_env_names(tmp_path, mo
     model_config = load_azure_ai_model_config(env_path=env_path)
 
     assert model_config.project_endpoint == "https://legacy-example.cognitiveservices.azure.com/"
-    assert model_config.model_deployment_name == "gpt-53-chat-legacy"
+    assert model_config.model_deployment_name == "gpt-54-mini-legacy"
 
 
 def test_load_azure_ai_model_config_raises_when_env_is_incomplete(tmp_path, monkeypatch):
@@ -204,7 +204,7 @@ agents:
         "\n".join(
             [
                 "AZURE_AI_PROJECT_ENDPOINT=https://env-example.cognitiveservices.azure.com/",
-                "AZURE_AI_MODEL_DEPLOYMENT_NAME=gpt-53-chat-env",
+                "AZURE_AI_MODEL_DEPLOYMENT_NAME=gpt-54-mini-env",
             ]
         )
     )
@@ -242,7 +242,7 @@ agents:
         project_client=project_client,
         credential=credential,
         owns_credential=True,
-        model_id="gpt-53-chat-env",
+        model_id="gpt-54-mini-env",
         async_client=async_openai_client,
     )
 

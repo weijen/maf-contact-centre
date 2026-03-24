@@ -55,6 +55,34 @@ tests/                          # pytest unit tests
    uv run python main.py
    ```
 
+### VS Code note
+
+The workspace includes `.vscode/settings.json` with `python.analysis.extraPaths` set to `.` so Pylance can resolve imports such as `src.devui` from the repository root. This only affects editor analysis and autocomplete; it does not change runtime behavior.
+
+## DevUI
+
+Run the local Agent Framework DevUI with in-memory registration of the three agents and the handoff workflow:
+
+```bash
+uv run python main.py devui
+```
+
+This opens the browser by default.
+
+The legacy helper still works and forwards to the same command:
+
+```bash
+uv run python scripts/run_devui.py
+```
+
+Optional flags:
+
+- `--host 0.0.0.0` to bind outside localhost
+- `--port 8080` to change the port
+- `--no-auto-open` to keep the browser closed on startup
+- `--instrumentation-enabled` to enable DevUI OpenTelemetry instrumentation
+- `--mode user` to switch from developer mode to user mode
+
 ## Evaluation
 
 Run the automated routing evaluation against all 9 test cases:
@@ -84,7 +112,7 @@ OpenTelemetry traces are exported to Azure Application Insights and visible in t
 All Azure resources are managed with Terraform in `infra/`:
 
 - AI Foundry account + project
-- GPT model deployment (`gpt-53-chat`)
+- GPT model deployment (`gpt-54-mini`)
 - Evaluator model deployment (`gpt-4o` — required for LLM-judged evaluators)
 - Application Insights + Log Analytics
 - App Insights connection (enables Tracing in AI Foundry portal)
@@ -104,7 +132,7 @@ Required:
 
 ```dotenv
 AZURE_AI_PROJECT_ENDPOINT=https://your-project.cognitiveservices.azure.com/
-AZURE_AI_MODEL_DEPLOYMENT_NAME=gpt-53-chat
+AZURE_AI_MODEL_DEPLOYMENT_NAME=gpt-54-mini
 ```
 
 For evaluation (LLM-judged evaluators):

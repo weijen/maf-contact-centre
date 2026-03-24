@@ -27,7 +27,7 @@ az provider register --namespace 'Microsoft.MachineLearningServices'
 | AI Services | `ais-maf-cc` | Cognitive services endpoint |
 | AI Foundry Hub | `hub-maf-cc` | Parent workspace |
 | AI Foundry Project | `maf-contact-centre` | AI project |
-| GPT-5.3-chat Deployment | `gpt-53-chat` | Model deployment (GlobalStandard) |
+| GPT-5.4-mini Deployment | `gpt-54-mini` | Model deployment (GlobalStandard) |
 
 ## Deployment Steps
 
@@ -92,6 +92,7 @@ terraform apply main.destroy.tfplan
 | `location` | `swedencentral` | Azure region |
 | `resource_group_name` | `rg-maf-contact-centre` | Resource group name |
 | `environment` | `dev` | Environment tag |
-| `model_name` | `gpt-5.3-chat` | OpenAI model name |
-| `model_version` | `2026-01-01` | Model version string |
+| `model_deployment_name` | `gpt-54-mini` | Deployment name for the main model |
+| `model_name` | `gpt-5.4-mini` | OpenAI model name |
+| `model_version` | `2026-03-17` | Model version string |
 | `model_capacity` | `30` | Capacity in K tokens/min |

@@ -22,11 +22,14 @@ resource "azurerm_resource_group" "main" {
 # ---------------------------------------------------------------------------
 
 resource "azurerm_storage_account" "hub" {
-  name                     = "stmafcc"
-  location                 = azurerm_resource_group.main.location
-  resource_group_name      = azurerm_resource_group.main.name
-  account_tier             = "Standard"
-  account_replication_type = "LRS"
+  name                            = "stmafcc"
+  location                        = azurerm_resource_group.main.location
+  resource_group_name             = azurerm_resource_group.main.name
+  account_tier                    = "Standard"
+  account_replication_type        = "LRS"
+  allow_nested_items_to_be_public = false
+  public_network_access_enabled   = false
+  shared_access_key_enabled       = false
 
   tags = {
     environment = var.environment
@@ -38,12 +41,13 @@ resource "azurerm_storage_account" "hub" {
 # ---------------------------------------------------------------------------
 
 resource "azurerm_key_vault" "hub" {
-  name                     = "kv-maf-cc"
-  location                 = azurerm_resource_group.main.location
-  resource_group_name      = azurerm_resource_group.main.name
-  tenant_id                = data.azurerm_client_config.current.tenant_id
-  sku_name                 = "standard"
-  purge_protection_enabled = true
+  name                          = "kv-maf-cc"
+  location                      = azurerm_resource_group.main.location
+  resource_group_name           = azurerm_resource_group.main.name
+  tenant_id                     = data.azurerm_client_config.current.tenant_id
+  sku_name                      = "standard"
+  public_network_access_enabled = false
+  purge_protection_enabled      = true
 
   tags = {
     environment = var.environment
@@ -98,10 +102,10 @@ resource "azapi_resource" "ai_foundry" {
       type = "SystemAssigned"
     }
     properties = {
-      disableLocalAuth       = false
+      disableLocalAuth       = true
       allowProjectManagement = true
       customSubDomainName    = "ais-maf-cc"
-      publicNetworkAccess    = "Enabled"
+      publicNetworkAccess    = "Disabled"
     }
   }
 
@@ -174,7 +178,7 @@ resource "azapi_resource" "appinsights_connection" {
 
 resource "azapi_resource" "gpt_deployment" {
   type      = "Microsoft.CognitiveServices/accounts/deployments@2025-06-01"
-  name      = "gpt-53-chat"
+  name      = var.model_deployment_name
   parent_id = azapi_resource.ai_foundry.id
 
   body = {

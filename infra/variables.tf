@@ -21,16 +21,22 @@ variable "environment" {
   default     = "dev"
 }
 
+variable "model_deployment_name" {
+  description = "Deployment name for the main model"
+  type        = string
+  default     = "gpt-54-mini"
+}
+
 variable "model_name" {
   description = "OpenAI model name to deploy"
   type        = string
-  default     = "gpt-5.3-chat"
+  default     = "gpt-5.4-mini"
 }
 
 variable "model_version" {
   description = "OpenAI model version string"
   type        = string
-  default     = "2026-03-03"
+  default     = "2026-03-17"
 }
 
 variable "model_capacity" {
