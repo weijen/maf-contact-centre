@@ -154,6 +154,15 @@ Notes:
 - `.env` is ignored by git
 - Process environment variables override values from `.env`
 
+## Known issues & patches
+
+| Issue | Patch | Remove when |
+|---|---|---|
+| [microsoft/agent-framework#3983](https://github.com/microsoft/agent-framework/issues/3983) — DevUI `"generator didn't stop after throw()"` error on workflow error paths | `src/core/patches.py` monkey-patches `AgentFrameworkExecutor._execute_workflow` to wrap raw dict events so `.type` access doesn't crash | `agent-framework-devui` is upgraded past `1.0.0b260212` (fix landed in `>= 1.0.0b260304`) |
+| [microsoft/agent-framework#4053](https://github.com/microsoft/agent-framework/issues/4053) — `"No tool output found for function call"` 400 error when the model issues a tool call and a handoff transfer in the same response | Prompt-level guard: all agent prompts (`src/prompts/*.md`) include a **Transfer rules** section that instructs the model to never call a tool and transfer in the same turn | `agent-framework` fixes #4053 so HandoffBuilder flushes pending tool calls before switching agents |
+
+The #3983 patch is applied automatically in `src/devui.py` at startup. It is idempotent and auto-skips if the upstream fix is detected.
+
 ## Out of scope (V1)
 
 - Real authentication

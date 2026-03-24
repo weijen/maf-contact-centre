@@ -105,7 +105,7 @@ resource "azapi_resource" "ai_foundry" {
       disableLocalAuth       = true
       allowProjectManagement = true
       customSubDomainName    = "ais-maf-cc"
-      publicNetworkAccess    = "Disabled"
+      publicNetworkAccess    = "Enabled"
     }
   }
 

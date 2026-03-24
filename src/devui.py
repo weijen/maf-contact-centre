@@ -13,6 +13,7 @@ from src.agents.common import ManagedFoundryResponsesClient, build_chat_client
 from src.agents.receptionist import create_receptionist_agent
 from src.agents.support import create_support_agent
 from src.core.config import DEFAULT_CONFIG_PATH, DEFAULT_ENV_PATH
+from src.core.patches import apply_devui_executor_patch
 from src.core.telemetry import flush_telemetry, setup_telemetry
 from src.workflows.handoff_workflow import build_handoff_workflow
 
@@ -66,6 +67,7 @@ def serve_devui(
     client: ManagedFoundryResponsesClient | OpenAIResponsesClient | None = None,
 ) -> None:
     setup_telemetry()
+    apply_devui_executor_patch()
 
     owns_client = client is None
     resolved_client = client or build_chat_client(env_path=env_path)

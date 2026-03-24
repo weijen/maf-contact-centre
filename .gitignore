@@ -37,3 +37,4 @@ wheels/
 data/*_results*.jsonl
 data/manual_test_results_*.json
 result.log
+.vscode/
