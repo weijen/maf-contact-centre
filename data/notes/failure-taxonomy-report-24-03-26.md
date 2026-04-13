@@ -57,3 +57,38 @@ Context: run after adding `## Transfer rules` prompt guard to all three agents (
 2. **Framework #4053 still triggers (1 tool failure, down from 2):** The Transfer rules prompt guard reduced occurrences from 2 → 1 but did not eliminate them. mixed_intent_004 ("I was charged twice and I also can't log in") still crashed. The prompt guard is best-effort; a framework-level fix in HandoffBuilder is the true resolution. Track upstream [agent-framework#4053](https://github.com/microsoft/agent-framework/issues/4053).
 
 3. **Comparison with test 1:** Overall routing score improved from 0.833 → 0.875. Tool failures dropped from 2 → 1. The prompt guard partially mitigates #4053 but the core "offer instead of transfer" routing pattern remains the dominant failure mode.
+
+
+# Eval on 24/03/2026 - test 3
+
+## Primary Failure
+
+| Primary Failure | Count |
+|---|---|
+| no_failure | 42 |
+| routing_failure | 5 |
+| policy_failure | 1 |
+
+## Detailed failure cases
+
+| # | ID | Primary | Secondary | Notes |
+|---|---|---|---|---|
+| 1 | support_execution_001 | routing_failure | missed_specialist_route | Receptionist recognised support was needed and offered to transfer but did not execute the handoff. Query: "Reset password for user U123." |
+| 2 | support_execution_002 | routing_failure | missed_specialist_route | Receptionist recognised support was needed and offered to transfer but did not execute the handoff. Query: "Please create a support ticket for my login problem. My user id is U456." |
+| 3 | support_missing_003 | routing_failure | missed_specialist_route | Receptionist recognised support was needed and offered to transfer but did not execute the handoff. Query: "Create a support ticket for me." |
+| 4 | mixed_intent_002 | policy_failure | policy_not_followed | Agent attempted to call a tool and transfer simultaneously, triggering agent-framework#4053 ('No tool output found for function call' 400 error). Transfer rules in prompt should prevent this pattern. |
+| 5 | clarification_trap_002 | routing_failure | missed_specialist_route | Receptionist recognised support was needed and offered to transfer but did not execute the handoff. Query: "Reset the password for my work account." |
+| 6 | clarification_trap_004 | routing_failure | missed_specialist_route | Receptionist recognised support was needed and offered to transfer but did not execute the handoff. Query: "Create a support ticket for the issue I mentioned before." |
+
+## Evaluation notes
+
+- Quality evaluators (coherence, relevance, task_adherence) all failed with API 404 errors — likely a missing model deployment for the judge model.
+- Classifications above are based on routing evidence only. No response-quality failures could be detected without quality scores.
+- Routing accuracy: 87.5% (42/48)
+- Handoff accuracy: 89.6% (43/48)
+
+## Priority
+
+1. **Receptionist not executing handoff to support** (5 cases) — The receptionist recognises that support is needed and offers to transfer, but never actually calls the handoff. Root cause is likely the receptionist prompt: it tells the agent it "can connect" the caller but does not sufficiently instruct it to *immediately* route support-execution queries (password resets, ticket creation) to the support agent. Fix the receptionist prompt to route these queries without waiting for user confirmation.
+2. **agent-framework#4053 still firing** (1 case, `mixed_intent_002`) — Despite the new transfer-rules prompt section, the model still attempted a tool call + transfer in one turn, triggering a 400 error. Investigate whether the prompt workaround is insufficient for multi-intent queries or whether the framework fix is needed.
+3. **Deploy judge model** — All quality evaluators failed with 404. Ensure the judge model deployment is available so coherence, relevance, and task adherence scores can be captured in the next run.
